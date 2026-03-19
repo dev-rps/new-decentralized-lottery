@@ -20,3 +20,7 @@ This project implements a fair-play lottery system where users can participate b
 1. **Build the contract**:
    ```bash
    stellar contract build
+
+contract deployment link : https://stellar.expert/explorer/testnet/contract/CCAEG5HJRFLTWTLCLDJ6B5CADIPISJYE5AAHIHUNJFKQGNN3L46NJNJV
+<img width="1920" height="1080" alt="Screenshot 2026-03-19 144407" src="https://github.com/user-attachments/assets/d1896aee-b8fe-45df-b67a-22091bd20565" />
+
