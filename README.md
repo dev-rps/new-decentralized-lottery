@@ -112,7 +112,7 @@ Built using the powerful **Soroban SDK** on the Stellar network to enable scalab
 **contract address:** CD6YZWTTVLPVWB5CEH76IE7YVYQBY3V7VZFKMWTZ2ZDMD4XPYFYEWSJJ
 <img width="1920" height="1080" alt="contract-id" src="https://github.com/user-attachments/assets/1e63b610-e023-49a6-9689-f7174a0896bc" />
 
-**dApp Link:** https://vercel.com/iitianrps24-6144s-projects/new-decentralized-lottery
+**dApp Link:** https://new-decentralized-lottery.vercel.app/
 <img width="1920" height="1080" alt="frontend-lottery" src="https://github.com/user-attachments/assets/8d003d71-6507-4b22-9c60-d657b11875e2" />
 
 
