@@ -42,7 +42,7 @@ impl LotteryContract {
             active: true,
         };
         
-        env.storage().instance().set(&DataKey::Lottery(counter), &info);
+        env.storage().persistent().set(&DataKey::Lottery(counter), &info);
         env.storage().instance().set(&DataKey::Counter, &counter);
         
         counter
@@ -52,7 +52,8 @@ impl LotteryContract {
     pub fn buy_ticket(env: Env, lottery_id: u32, buyer: Address) {
         buyer.require_auth();
         
-        let mut info: LotteryInfo = env.storage().instance().get(&DataKey::Lottery(lottery_id)).unwrap();
+        let mut info: LotteryInfo = env.storage().persistent().get(&DataKey::Lottery(lottery_id))
+            .expect("Lottery ID not found. Ensure you created a pool first.");
         
         assert!(info.active, "Lottery is not active");
         assert!(env.ledger().timestamp() < info.end_time, "Lottery has ended");
@@ -67,7 +68,8 @@ impl LotteryContract {
     
     /// Permissionless draw function: anyone can trigger it after the deadline.
     pub fn draw_winner(env: Env, lottery_id: u32) {
-        let mut info: LotteryInfo = env.storage().instance().get(&DataKey::Lottery(lottery_id)).unwrap();
+        let mut info: LotteryInfo = env.storage().persistent().get(&DataKey::Lottery(lottery_id))
+            .expect("Lottery not found");
         
         assert!(info.active, "Lottery already drawn");
         assert!(env.ledger().timestamp() >= info.end_time, "Lottery still ongoing");
@@ -96,6 +98,7 @@ impl LotteryContract {
     
     /// View function to get lottery information.
     pub fn get_lottery(env: Env, lottery_id: u32) -> LotteryInfo {
-        env.storage().instance().get(&DataKey::Lottery(lottery_id)).unwrap()
+        env.storage().persistent().get(&DataKey::Lottery(lottery_id))
+            .expect("Lottery not found")
     }
 }
