@@ -1,0 +1,41 @@
+﻿cargo :     Checking 
+lottery v0.0.0 (C:\Users\AI
+ZEN\Desktop\decentralized-l
+ottery\decentralized-lotter
+y\contracts\lottery)
+At line:1 char:1
++ cargo check 2>&1 | 
+Out-File -Encoding utf8 
+check.txt
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (     
+   Checking lo...tracts\   
+ lottery):String) [], R    
+emoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+error[E0282]: type 
+annotations needed
+  --> contracts\lottery\src
+\lib.rs:83:28
+   |
+83 |         let 
+winner_index = env.prng().g
+en_range(0u64..(participant
+s_len as u64)) as u32;
+   |                       
+     ^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^ cannot infer type for 
+type parameter `T` 
+declared on the method 
+`gen_range`
+
+For more information about 
+this error, try `rustc 
+--explain E0282`.
+error: could not compile 
+`lottery` (lib) due to 1 
+previous error

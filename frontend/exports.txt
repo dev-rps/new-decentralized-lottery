@@ -1,0 +1,14 @@
+WatchWalletChanges
+addToken
+default
+getAddress
+getNetwork
+getNetworkDetails
+isAllowed
+isBrowser
+isConnected
+requestAccess
+setAllowed
+signAuthEntry
+signMessage
+signTransaction
