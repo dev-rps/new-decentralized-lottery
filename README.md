@@ -78,11 +78,11 @@ stellar contract deploy \
 
 ## 🌐 Deployed Smart Contract
 
-* **Contract Address:** `CBLTMTDDDXFY3BKXYE6W4MY7RAQCFLKBG56MBHDZK6TIHGVHY2EJT7OV`
+* **Contract Address:** `CD6YZWTTVLPVWB5CEH76IE7YVYQBY3V7VZFKMWTZ2ZDMD4XPYFYEWSJJ`
 * **Network:** Stellar Testnet
-* **Explorer Link:** 👉 [View on Stellar.Expert](https://stellar.expert/explorer/testnet/contract/CBLTMTDDDXFY3BKXYE6W4MY7RAQCFLKBG56MBHDZK6TIHGVHY2EJT7OV)
-* **Link Address:** https://stellar.expert/explorer/testnet/contract/CBLTMTDDDXFY3BKXYE6W4MY7RAQCFLKBG56MBHDZK6TIHGVHY2EJT7OV
-<img width="1920" height="1080" alt="contract screenshot" src="https://github.com/user-attachments/assets/c6b03a00-b4c4-4b5b-b6f0-4bde7c623d02" />
+* **Explorer Link:** 👉 [View on Stellar.Expert](CD6YZWTTVLPVWB5CEH76IE7YVYQBY3V7VZFKMWTZ2ZDMD4XPYFYEWSJJ)
+* **Link Address:** https://stellar.expert/explorer/testnet/contract/CD6YZWTTVLPVWB5CEH76IE7YVYQBY3V7VZFKMWTZ2ZDMD4XPYFYEWSJJ
+
 
 ## 🧪 Future Improvements
 
@@ -108,3 +108,15 @@ This project is licensed under the MIT License.
 ## ⭐ Acknowledgment
 
 Built using the powerful **Soroban SDK** on the Stellar network to enable scalable, transparent, and efficient smart contract development.
+
+## dApp Full Stack Deployment
+**contract address:** CD6YZWTTVLPVWB5CEH76IE7YVYQBY3V7VZFKMWTZ2ZDMD4XPYFYEWSJJ
+<img width="1920" height="1080" alt="contract-id" src="https://github.com/user-attachments/assets/1e63b610-e023-49a6-9689-f7174a0896bc" />
+
+**dApp Link:** https://vercel.com/iitianrps24-6144s-projects/new-decentralized-lottery
+<img width="1920" height="1080" alt="frontend-lottery" src="https://github.com/user-attachments/assets/8d003d71-6507-4b22-9c60-d657b11875e2" />
+
+
+
+
+
