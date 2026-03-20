@@ -80,7 +80,6 @@ stellar contract deploy \
 
 * **Contract Address:** `CD6YZWTTVLPVWB5CEH76IE7YVYQBY3V7VZFKMWTZ2ZDMD4XPYFYEWSJJ`
 * **Network:** Stellar Testnet
-* **Explorer Link:** 👉 [View on Stellar.Expert](CD6YZWTTVLPVWB5CEH76IE7YVYQBY3V7VZFKMWTZ2ZDMD4XPYFYEWSJJ)
 * **Link Address:** https://stellar.expert/explorer/testnet/contract/CD6YZWTTVLPVWB5CEH76IE7YVYQBY3V7VZFKMWTZ2ZDMD4XPYFYEWSJJ
 
 
