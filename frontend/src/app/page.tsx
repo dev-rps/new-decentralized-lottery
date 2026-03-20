@@ -1,24 +1,30 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { isAllowed, setAllowed, getAddress } from '@stellar/freighter-api';
+import { isConnected, requestAccess, getAddress } from '@stellar/freighter-api';
 
 export default function Home() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
   const connectWallet = async () => {
     try {
-      if (await isAllowed()) {
-        const pk = await getAddress();
-        if (pk.address) setWalletAddress(pk.address);
+      const installed = await isConnected();
+      if (!installed) {
+        alert("Freighter wallet is not installed. Please install the extension.");
+        return;
+      }
+      
+      const access = await requestAccess();
+      if (typeof access === 'string') {
+        setWalletAddress(access);
       } else {
-        await setAllowed();
+        // Fallback
         const pk = await getAddress();
         if (pk.address) setWalletAddress(pk.address);
       }
     } catch (e) {
       console.error(e);
-      alert("Failed to connect Freighter. Is it installed?");
+      alert("Failed to connect Freighter. Did you open the extension?");
     }
   };
 
