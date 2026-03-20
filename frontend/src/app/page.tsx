@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { isConnected, requestAccess, getAddress, signTransaction } from '@stellar/freighter-api';
-import { server, networkPassphrase, buyTicketTx, drawWinnerTx } from '@/lib/stellar';
+import { server, networkPassphrase, buyTicketTx, drawWinnerTx, createLotteryTx } from '@/lib/stellar';
 import { Transaction } from '@stellar/stellar-sdk';
 
 export default function Home() {
@@ -103,6 +103,45 @@ export default function Home() {
     }
   };
 
+  const handleCreateLottery = async () => {
+    if (!walletAddress) {
+      alert("Please connect your wallet first.");
+      return;
+    }
+
+    setIsDeploying(true);
+    setStatus("Creating new prize pool...");
+
+    try {
+      const XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75YJBMKBA2VZ7B6976666666666666666666";
+      const ticketPrice = BigInt(10);
+      const duration = BigInt(3600); // 1 hour duration for testing
+      
+      const tx = await createLotteryTx(walletAddress, XLM_SAC, ticketPrice, duration);
+      
+      setStatus("Waiting for Freighter signature...");
+      const signResult = await signTransaction(tx.toXDR(), { networkPassphrase });
+      const signedXdr = typeof signResult === 'string' ? signResult : signResult.signedTxXdr;
+      
+      setStatus("Deploying Lottery to Soroban...");
+      const txToSubmit = new Transaction(signedXdr, networkPassphrase);
+      const result = await server.sendTransaction(txToSubmit);
+      
+      if (result.status !== "ERROR") {
+        alert("Success! New lottery created. You can now buy tickets for ID 1 (if this is the first).");
+      } else {
+        alert("Creation failed. Check console.");
+        console.error(result);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error creating lottery. Did you sign the transaction?");
+    } finally {
+      setIsDeploying(false);
+      setStatus(null);
+    }
+  };
+
   return (
     <main className="min-h-screen p-8 flex flex-col items-center justify-center relative overflow-hidden">
       {/* Decorative background elements */}
@@ -192,10 +231,11 @@ export default function Home() {
               <h3 className="text-2xl font-bold mb-3 text-white">Create New Lottery</h3>
               <p className="text-slate-400 mb-8 max-w-sm">Permissionlessly start a new prize pool. You define the ticket price and duration.</p>
               <button 
+                onClick={handleCreateLottery}
                 disabled={isDeploying}
-                className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-bold transition-colors w-full text-white cursor-not-allowed hover:shadow-lg opacity-50"
+                className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-bold transition-colors w-full text-white cursor-pointer hover:shadow-lg disabled:opacity-50"
               >
-                Launch New Pool (Coming Soon)
+                {isDeploying ? "Initializing..." : "Launch New Pool"}
               </button>
             </div>
             

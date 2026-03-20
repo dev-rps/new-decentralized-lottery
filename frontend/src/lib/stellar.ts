@@ -6,7 +6,8 @@ import {
   Contract, 
   TransactionBuilder, 
   Networks, 
-  BASE_FEE
+  BASE_FEE,
+  nativeToScVal
 } from "@stellar/stellar-sdk";
 
 export const rpcUrl = "https://soroban-testnet.stellar.org";
@@ -75,6 +76,28 @@ export async function drawWinnerTx(executorAddress: string, lotteryId: number) {
   )
   .addOperation(contract.call("draw_winner", 
     xdr.ScVal.scvU32(lotteryId)
+  ))
+  .setTimeout(30)
+  .build();
+
+  return tx;
+}
+
+/**
+ * Build a transaction to create a new lottery.
+ */
+export async function createLotteryTx(creatorAddress: string, tokenAddress: string, ticketPrice: bigint, duration: bigint) {
+  const contract = new Contract(CONTRACT_ID);
+  
+  const tx = new TransactionBuilder(
+    await server.getAccount(creatorAddress),
+    { fee: BASE_FEE, networkPassphrase }
+  )
+  .addOperation(contract.call("create_lottery", 
+    nativeToScVal(creatorAddress, { type: "address" }),
+    nativeToScVal(tokenAddress, { type: "address" }),
+    nativeToScVal(ticketPrice, { type: "i128" }),
+    nativeToScVal(duration, { type: "u64" })
   ))
   .setTimeout(30)
   .build();
