@@ -1,10 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { isConnected, requestAccess, getAddress } from '@stellar/freighter-api';
+import { isConnected, requestAccess, getAddress, signTransaction } from '@stellar/freighter-api';
+import { server, networkPassphrase, buyTicketTx, drawWinnerTx } from '@/lib/stellar';
+import { Transaction } from '@stellar/stellar-sdk';
 
 export default function Home() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
 
   const connectWallet = async () => {
     try {
@@ -18,13 +22,84 @@ export default function Home() {
       if (typeof access === 'string') {
         setWalletAddress(access);
       } else {
-        // Fallback
         const pk = await getAddress();
         if (pk.address) setWalletAddress(pk.address);
       }
     } catch (e) {
       console.error(e);
       alert("Failed to connect Freighter. Did you open the extension?");
+    }
+  };
+
+  const handleBuyTicket = async () => {
+    if (!walletAddress) {
+      alert("Please connect your wallet first.");
+      return;
+    }
+
+    setIsDeploying(true);
+    setStatus("Preparing transaction...");
+
+    try {
+      // For demo purposes, we use a fixed token address (SAC XLM on Testnet)
+      const XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75YJBMKBA2VZ7B6976666666666666666666";
+      const tx = await buyTicketTx(walletAddress, 1, XLM_SAC, BigInt(10));
+      
+      setStatus("Waiting for Freighter signature...");
+      const signResult = await signTransaction(tx.toXDR(), { networkPassphrase });
+      const signedXdr = typeof signResult === 'string' ? signResult : signResult.signedTxXdr;
+      
+      setStatus("Submitting to Stellar Testnet...");
+      const txToSubmit = new Transaction(signedXdr, networkPassphrase);
+      const result = await server.sendTransaction(txToSubmit);
+      
+      if (result.status !== "ERROR") {
+        alert("Success! Transaction submitted to the network.");
+      } else {
+        alert("Transaction failed. Check console.");
+        console.error(result);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error buying ticket. Ensure you have tokens and Freighter is unlocked.");
+    } finally {
+      setIsDeploying(false);
+      setStatus(null);
+    }
+  };
+
+  const handleDrawWinner = async () => {
+    if (!walletAddress) {
+      alert("Please connect your wallet first.");
+      return;
+    }
+
+    setIsDeploying(true);
+    setStatus("Preparing draw transaction...");
+
+    try {
+      const tx = await drawWinnerTx(walletAddress, 1);
+      
+      setStatus("Waiting for Freighter signature...");
+      const signResult = await signTransaction(tx.toXDR(), { networkPassphrase });
+      const signedXdr = typeof signResult === 'string' ? signResult : signResult.signedTxXdr;
+      
+      setStatus("Executing Draw on Soroban...");
+      const txToSubmit = new Transaction(signedXdr, networkPassphrase);
+      const result = await server.sendTransaction(txToSubmit);
+      
+      if (result.status !== "ERROR") {
+        alert("Success! Draw transaction submitted to the network.");
+      } else {
+        alert("Draw failed. Ensure the lottery duration has passed.");
+        console.error(result);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error drawing winner. Only possible after the deadline.");
+    } finally {
+      setIsDeploying(false);
+      setStatus(null);
     }
   };
 
@@ -57,12 +132,17 @@ export default function Home() {
           <p className="text-xl text-slate-300 max-w-2xl mx-auto">
             100% Permissionless. Transparent. Secure. Play and win autonomously on the Stellar network.
           </p>
+          {status && (
+            <div className="animate-pulse text-violet-400 font-bold tracking-widest uppercase text-sm mt-4">
+              {status}
+            </div>
+          )}
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
           {/* Active Lottery Card */}
           <div className="glass-panel p-10 rounded-3xl flex flex-col justify-between transform transition duration-500 hover:scale-[1.02] border-t border-l border-white/20 relative z-10">
-            <div>
+            <div className={isDeploying ? "opacity-50 pointer-events-none" : ""}>
               <div className="flex justify-between items-center mb-8">
                 <span className="bg-green-500/20 text-green-400 px-4 py-1.5 rounded-full text-sm font-bold tracking-wide border border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
                   ACTIVE
@@ -94,8 +174,12 @@ export default function Home() {
               </div>
             </div>
             
-            <button className="w-full bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white font-bold text-lg py-5 rounded-xl shadow-[0_0_30px_rgba(139,92,246,0.4)] transition-all transform active:scale-95 duration-200 cursor-pointer">
-              Buy Ticket Now
+            <button 
+              onClick={handleBuyTicket}
+              disabled={isDeploying}
+              className="w-full bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white font-bold text-lg py-5 rounded-xl shadow-[0_0_30px_rgba(139,92,246,0.4)] transition-all transform active:scale-95 duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDeploying ? "Processing..." : "Buy Ticket Now"}
             </button>
           </div>
 
@@ -107,8 +191,11 @@ export default function Home() {
               </div>
               <h3 className="text-2xl font-bold mb-3 text-white">Create New Lottery</h3>
               <p className="text-slate-400 mb-8 max-w-sm">Permissionlessly start a new prize pool. You define the ticket price and duration.</p>
-              <button className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-bold transition-colors w-full text-white cursor-pointer hover:shadow-lg">
-                Launch New Pool
+              <button 
+                disabled={isDeploying}
+                className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-bold transition-colors w-full text-white cursor-not-allowed hover:shadow-lg opacity-50"
+              >
+                Launch New Pool (Coming Soon)
               </button>
             </div>
             
@@ -119,8 +206,12 @@ export default function Home() {
               </div>
               <h3 className="text-2xl font-bold mb-3 text-white relative z-10">Draw Winner</h3>
               <p className="text-slate-400 mb-8 max-w-sm relative z-10">Conclude an ended lottery using Soroban's native PRNG. Anyone can execute this.</p>
-              <button className="px-8 py-4 bg-gradient-to-r from-orange-500/20 to-red-500/20 hover:from-orange-500/30 hover:to-red-500/30 text-orange-200 border border-orange-500/30 rounded-xl font-bold transition-colors w-full relative z-10 hover:shadow-[0_0_20px_rgba(249,115,22,0.2)] cursor-pointer">
-                Execute Random Draw
+              <button 
+                onClick={handleDrawWinner}
+                disabled={isDeploying}
+                className="px-8 py-4 bg-gradient-to-r from-orange-500/20 to-red-500/20 hover:from-orange-500/30 hover:to-red-500/30 text-orange-200 border border-orange-500/30 rounded-xl font-bold transition-colors w-full relative z-10 hover:shadow-[0_0_20px_rgba(249,115,22,0.2)] cursor-pointer disabled:opacity-50"
+              >
+                {isDeploying ? "Drawing..." : "Execute Random Draw"}
               </button>
             </div>
           </div>
