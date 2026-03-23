@@ -21,11 +21,7 @@ export const CONTRACT_ID = "CDRTITFVPL7SMUBWKXGEHP3XUIX2A6KZ3RUMS6AIFEPOS7QGIERP
 export async function getLotteryInfo(lotteryId: number) {
   const contract = new Contract(CONTRACT_ID);
   
-  // Call the get_lottery function (view function)
-  const response = await server.getEvents({
-    startLedger: 0,
-    filters: [], // Simplified for now
-  });
+
 
   // Simulation is easier for view functions
   const simRes = await server.simulateTransaction(
