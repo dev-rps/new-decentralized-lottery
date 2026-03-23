@@ -63,7 +63,7 @@ impl LotteryContract {
         token_client.transfer(&buyer, &env.current_contract_address(), &info.ticket_price);
         
         info.participants.push_back(buyer);
-        env.storage().instance().set(&DataKey::Lottery(lottery_id), &info);
+        env.storage().persistent().set(&DataKey::Lottery(lottery_id), &info);
     }
     
     /// Permissionless draw function: anyone can trigger it after the deadline.
@@ -77,7 +77,7 @@ impl LotteryContract {
         let participants_len = info.participants.len();
         if participants_len == 0 {
             info.active = false;
-            env.storage().instance().set(&DataKey::Lottery(lottery_id), &info);
+            env.storage().persistent().set(&DataKey::Lottery(lottery_id), &info);
             return;
         }
         
@@ -93,7 +93,7 @@ impl LotteryContract {
         info.winner = Some(winner);
         info.active = false;
         
-        env.storage().instance().set(&DataKey::Lottery(lottery_id), &info);
+        env.storage().persistent().set(&DataKey::Lottery(lottery_id), &info);
     }
     
     /// View function to get lottery information.
@@ -102,3 +102,6 @@ impl LotteryContract {
             .expect("Lottery not found")
     }
 }
+
+#[cfg(test)]
+mod test;

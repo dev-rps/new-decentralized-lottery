@@ -2,13 +2,30 @@
 
 import React, { useState, useEffect } from 'react';
 import { isConnected, requestAccess, getAddress, signTransaction } from '@stellar/freighter-api';
-import { server, networkPassphrase, buyTicketTx, drawWinnerTx, createLotteryTx } from '@/lib/stellar';
+import { server, networkPassphrase, buyTicketTx, drawWinnerTx, createLotteryTx, getLotteryInfo } from '@/lib/stellar';
 import { Transaction } from '@stellar/stellar-sdk';
 
 export default function Home() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [lotteryInfo, setLotteryInfo] = useState<any>(null);
+
+  const fetchLotteryInfo = async () => {
+    try {
+      const info = await getLotteryInfo(1);
+      setLotteryInfo(info);
+    } catch (e) {
+      console.error("Failed to fetch lottery info", e);
+      setLotteryInfo(null);
+    }
+  };
+
+  useEffect(() => {
+    fetchLotteryInfo();
+    const interval = setInterval(fetchLotteryInfo, 10000); // poll every 10s
+    return () => clearInterval(interval);
+  }, []);
 
   const connectWallet = async () => {
     try {
@@ -43,7 +60,7 @@ export default function Home() {
     try {
       // For demo purposes, we use a fixed token address (SAC XLM on Testnet)
       const XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75YJBMKBA2VZ7B6976666666666666666666";
-      const tx = await buyTicketTx(walletAddress, 1, XLM_SAC, BigInt(10));
+      const tx = await buyTicketTx(walletAddress, 1, XLM_SAC, BigInt(100000000));
       
       setStatus("Waiting for Freighter signature...");
       const signResult = await signTransaction(tx.toXDR(), { networkPassphrase });
@@ -55,6 +72,7 @@ export default function Home() {
       
       if (result.status !== "ERROR") {
         alert("Success! Transaction submitted to the network.");
+        fetchLotteryInfo();
       } else {
         alert("Transaction failed. Check console.");
         console.error(result);
@@ -90,6 +108,7 @@ export default function Home() {
       
       if (result.status !== "ERROR") {
         alert("Success! Draw transaction submitted to the network.");
+        fetchLotteryInfo();
       } else {
         alert("Draw failed. Ensure the lottery duration has passed.");
         console.error(result);
@@ -114,7 +133,7 @@ export default function Home() {
 
     try {
       const XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75YJBMKBA2VZ7B6976666666666666666666";
-      const ticketPrice = BigInt(10);
+      const ticketPrice = BigInt(100000000);
       const duration = BigInt(3600); // 1 hour duration for testing
       
       const tx = await createLotteryTx(walletAddress, XLM_SAC, ticketPrice, duration);
@@ -129,6 +148,7 @@ export default function Home() {
       
       if (result.status !== "ERROR") {
         alert("Success! New lottery created. You can now buy tickets for ID 1 (if this is the first).");
+        fetchLotteryInfo();
       } else {
         alert("Creation failed. Check console.");
         console.error(result);
@@ -141,6 +161,32 @@ export default function Home() {
       setStatus(null);
     }
   };
+
+  let isActive = false;
+  let timeLeftStr = "N/A";
+  let poolSize = "0";
+  let participantCount = 0;
+  let ticketPriceStr = "10";
+  
+  if (lotteryInfo) {
+      isActive = lotteryInfo.active;
+      const now = Math.floor(Date.now() / 1000);
+      const end = Number(lotteryInfo.end_time);
+      if (end > now) {
+          const diff = end - now;
+          const h = Math.floor(diff / 3600);
+          const m = Math.floor((diff % 3600) / 60);
+          timeLeftStr = `${h}h ${m}m`;
+      } else {
+          timeLeftStr = "Ended";
+      }
+      
+      participantCount = lotteryInfo.participants ? lotteryInfo.participants.length : 0;
+      const tpStr = lotteryInfo.ticket_price ? lotteryInfo.ticket_price.toString() : "0";
+      const tp = Number(tpStr) / 100000000;
+      ticketPriceStr = tp.toString();
+      poolSize = (tp * participantCount).toString();
+  }
 
   return (
     <main className="min-h-screen p-8 flex flex-col items-center justify-center relative overflow-hidden">
@@ -183,28 +229,34 @@ export default function Home() {
           <div className="glass-panel p-10 rounded-3xl flex flex-col justify-between transform transition duration-500 hover:scale-[1.02] border-t border-l border-white/20 relative z-10">
             <div className={isDeploying ? "opacity-50 pointer-events-none" : ""}>
               <div className="flex justify-between items-center mb-8">
-                <span className="bg-green-500/20 text-green-400 px-4 py-1.5 rounded-full text-sm font-bold tracking-wide border border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
-                  ACTIVE
-                </span>
+                {lotteryInfo ? (
+                  <span className={`px-4 py-1.5 rounded-full text-sm font-bold tracking-wide border shadow-[0_0_15px_rgba(34,197,94,0.3)] ${isActive ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}`}>
+                    {isActive ? "ACTIVE" : "ENDED"}
+                  </span>
+                ) : (
+                  <span className="bg-slate-500/20 text-slate-400 px-4 py-1.5 rounded-full text-sm font-bold tracking-wide border border-slate-500/30 shadow-[0_0_15px_rgba(148,163,184,0.3)]">
+                    NO POOL
+                  </span>
+                )}
                 <span className="text-slate-300 text-sm font-medium bg-slate-800/50 px-4 py-1.5 rounded-full">
-                  Time left: <span className="text-white font-bold ml-1">12h 45m</span>
+                  Time left: <span className="text-white font-bold ml-1">{timeLeftStr}</span>
                 </span>
               </div>
               <h2 className="text-3xl font-bold mb-4 text-white">Main Prize Pool</h2>
               <div className="flex items-baseline space-x-3 my-8">
                 <span className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
-                  5,000
+                  {poolSize}
                 </span>
                 <span className="text-2xl text-violet-400 uppercase font-black tracking-widest">XLM</span>
               </div>
               <div className="space-y-3 mb-10 bg-black/20 p-6 rounded-2xl border border-white/5">
                 <div className="flex justify-between">
                   <span className="text-slate-400 text-sm">Ticket Price</span>
-                  <span className="text-white font-bold">10 XLM</span>
+                  <span className="text-white font-bold">{ticketPriceStr} XLM</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400 text-sm">Participants</span>
-                  <span className="text-white font-bold">124 Players</span>
+                  <span className="text-white font-bold">{participantCount} Players</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400 text-sm">Contract</span>
@@ -215,10 +267,10 @@ export default function Home() {
             
             <button 
               onClick={handleBuyTicket}
-              disabled={isDeploying}
+              disabled={isDeploying || !lotteryInfo || !isActive}
               className="w-full bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white font-bold text-lg py-5 rounded-xl shadow-[0_0_30px_rgba(139,92,246,0.4)] transition-all transform active:scale-95 duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isDeploying ? "Processing..." : "Buy Ticket Now"}
+              {isDeploying ? "Processing..." : (!lotteryInfo ? "Create Pool First" : "Buy Ticket Now")}
             </button>
           </div>
 
