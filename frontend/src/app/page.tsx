@@ -151,12 +151,20 @@ export default function Home() {
     );
   };
 
-  const handleClaimPrize = () => {
+  const handleClaimPrize = (id?: number) => {
+    const targetId = typeof id === 'number' ? id : currentLotteryId;
     executeTxInfo(
       "Claim Prize",
-      async () => await claimPrizeTx(walletAddress!, currentLotteryId),
+      async () => await claimPrizeTx(walletAddress!, targetId),
       "Prize claimed successfully!"
     );
+  };
+
+  const selectLottery = async (id: number) => {
+    setCurrentLotteryId(id);
+    const info = await getLotteryInfo(id);
+    setLotteryInfo(info);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // State calculations
@@ -381,7 +389,7 @@ export default function Home() {
                             {!isClaimed ? (
                               <div className="space-y-4">
                                 <button
-                                  onClick={handleClaimPrize}
+                                  onClick={() => handleClaimPrize()}
                                   disabled={actionLoading !== null}
                                   className={`w-full max-w-sm mx-auto py-4 text-center rounded-xl font-bold text-lg transition-all disabled:opacity-50 ${
                                     walletAddress === winnerAddr 
@@ -497,28 +505,56 @@ export default function Home() {
                         const pool = tp * (item.participants?.length || 0);
                         const winAddr = item.winner ? String(item.winner) : "TBD";
                         const shortAddr = winAddr !== "TBD" ? `...${winAddr.slice(-3)}` : "TBD";
+                        const isPastActive = item.active;
+                        const isPastEnd = Number(item.end_time) <= nowTs;
                         
                         return (
                           <tr key={item.id} className="hover:bg-white/5 transition-colors group">
                             <td className="px-6 py-4 font-mono text-zinc-400">#{item.id}</td>
                             <td className="px-6 py-4">
-                              <span className={`px-2 py-1 rounded-md text-sm font-mono ${item.winner ? 'bg-zinc-800 text-zinc-300' : 'text-zinc-600 italic'}`}>
+                              <span 
+                                onClick={() => winAddr !== "TBD" && alert(`Full Winner Address: ${winAddr}`)}
+                                className={`px-2 py-1 rounded-md text-sm font-mono cursor-help ${item.winner ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'text-zinc-600 italic'}`}
+                              >
                                 {shortAddr}
                               </span>
                             </td>
                             <td className="px-6 py-4 font-semibold text-zinc-300">{pool} XLM</td>
                             <td className="px-6 py-4">
-                              {item.prize_claimed ? (
-                                <span className="flex items-center gap-2 text-emerald-500 text-sm">
-                                  <CheckCircle2 className="w-4 h-4" /> Distributed
-                                </span>
-                              ) : item.winner ? (
-                                <span className="flex items-center gap-2 text-amber-500 text-sm animate-pulse">
-                                  <Clock className="w-4 h-4" /> Pending Claim
-                                </span>
-                              ) : (
-                                <span className="text-zinc-500 text-sm">Active</span>
-                              )}
+                              <div className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-2">
+                                  {item.prize_claimed ? (
+                                    <span className="text-emerald-500 text-sm flex items-center gap-1">
+                                      <CheckCircle2 className="w-4 h-4" /> Distributed
+                                    </span>
+                                  ) : item.winner ? (
+                                    <span className="text-amber-500 text-sm flex items-center gap-1">
+                                      <Trophy className="w-4 h-4" /> Draw Done
+                                    </span>
+                                  ) : isPastActive && isPastEnd ? (
+                                    <span className="text-amber-400 text-sm italic">Ended</span>
+                                  ) : (
+                                    <span className="text-zinc-500 text-sm">Active</span>
+                                  )}
+                                </div>
+                                
+                                <div className="flex gap-2">
+                                  <button 
+                                    onClick={() => selectLottery(item.id)}
+                                    className="px-3 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 rounded-md text-zinc-400 transition-colors"
+                                  >
+                                    View
+                                  </button>
+                                  {(!item.prize_claimed && item.winner) && (
+                                    <button 
+                                      onClick={() => handleClaimPrize(item.id)}
+                                      className="px-3 py-1 text-xs bg-accent-600/20 hover:bg-accent-600/40 text-accent-400 rounded-md transition-colors border border-accent-600/30"
+                                    >
+                                      Claim
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
                             </td>
                           </tr>
                         );
