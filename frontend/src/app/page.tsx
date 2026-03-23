@@ -143,10 +143,11 @@ export default function Home() {
     );
   };
 
-  const handleDrawWinner = () => {
+  const handleDrawWinner = (id?: number) => {
+    const targetId = typeof id === 'number' ? id : currentLotteryId;
     executeTxInfo(
       "Draw Winner",
-      async () => await drawWinnerTx(walletAddress!, currentLotteryId),
+      async () => await drawWinnerTx(walletAddress!, targetId),
       "Winner drawn successfully!"
     );
   };
@@ -357,7 +358,7 @@ export default function Home() {
                               <AlertCircle className="w-5 h-5"/> Lottery Ended
                             </h3>
                             <button
-                              onClick={handleDrawWinner}
+                              onClick={() => handleDrawWinner()}
                               disabled={actionLoading !== null || !canDraw}
                               className="w-full max-w-sm mx-auto py-4 text-center rounded-xl font-bold text-lg bg-white text-black hover:bg-zinc-200 transition-all disabled:opacity-50"
                             >
@@ -545,6 +546,14 @@ export default function Home() {
                                   >
                                     View
                                   </button>
+                                  {(!item.winner && isPastActive && isPastEnd) && (
+                                    <button 
+                                      onClick={() => handleDrawWinner(item.id)}
+                                      className="px-3 py-1 text-xs bg-white text-black hover:bg-zinc-200 rounded-md transition-colors"
+                                    >
+                                      Draw
+                                    </button>
+                                  )}
                                   {(!item.prize_claimed && item.winner) && (
                                     <button 
                                       onClick={() => handleClaimPrize(item.id)}
