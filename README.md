@@ -1,4 +1,4 @@
-# 🎰 Soroban Decentralized Lottery
+# 🎰 Nexus Lottery - Soroban DApp
 
 [![Stellar](https://img.shields.io/badge/Stellar-Testnet-blue.svg)](https://stellar.org)
 [![Soroban](https://img.shields.io/badge/Soroban-Smart_Contract-orange.svg)](https://soroban.stellar.org)

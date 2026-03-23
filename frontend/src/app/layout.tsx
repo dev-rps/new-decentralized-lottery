@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Soroban Decentralized Lottery",
+  title: "Nexus Lottery | On-Chain Fortune",
   description: "A permissionless, mathematically fair lottery on the Stellar network.",
 };
 
@@ -27,7 +27,7 @@ export default function RootLayout({
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20"/><path d="M17 5V3"/><path d="M7 5V3"/><path d="M21 12h-2"/><path d="M5 12H3"/><path d="M17 19v2"/><path d="M7 19v2"/></svg>
               </div>
               <span className="text-xl font-bold tracking-tight text-white/90 hidden sm:block">
-                Soroban<span className="text-white/40">Lottery</span>
+                Nexus<span className="text-white/40">Lottery</span>
               </span>
             </div>
             
