@@ -21,9 +21,9 @@ export default function Home() {
   const [isDeploying, setIsDeploying] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [currentLotteryId, setCurrentLotteryId] = useState<number>(0);
-  const [lotteryInfo, setLotteryInfo] = useState<any>(null);
   const [nowTs, setNowTs] = useState<number>(Math.floor(Date.now() / 1000));
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [lotteryHistory, setLotteryHistory] = useState<any[]>([]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -39,8 +39,19 @@ export default function Home() {
         setCurrentLotteryId(count);
         const info = await getLotteryInfo(count);
         setLotteryInfo(info);
+
+        // Fetch history (last 5 rounds)
+        const history = [];
+        for (let i = count - 1; i > Math.max(0, count - 6); i--) {
+          const pastInfo = await getLotteryInfo(i);
+          if (pastInfo) {
+            history.push({ id: i, ...pastInfo });
+          }
+        }
+        setLotteryHistory(history);
       } else {
         setLotteryInfo(null);
+        setLotteryHistory([]);
       }
     } catch (e) {
       console.error("Failed to fetch lottery info", e);
@@ -458,6 +469,65 @@ export default function Home() {
             </div>
           </div>
 
+          {/* History Section (Full Width Below) */}
+          <div className="lg:col-span-12 space-y-6 mt-8">
+            <h2 className="text-2xl font-semibold flex items-center gap-2">
+              <Clock className="w-6 h-6 text-zinc-400" /> Draw History
+            </h2>
+            <div className="glass-card rounded-3xl overflow-hidden border-white/5 bg-zinc-900/20">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-white/5 bg-white/5">
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500">ID</th>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500">Winner</th>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500">Prize Pool</th>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {lotteryHistory.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-12 text-center text-zinc-500">No past draws found.</td>
+                      </tr>
+                    ) : (
+                      lotteryHistory.map((item) => {
+                        const tp = Number(item.ticket_price || 0) / 10000000;
+                        const pool = tp * (item.participants?.length || 0);
+                        const winAddr = item.winner ? String(item.winner) : "TBD";
+                        const shortAddr = winAddr !== "TBD" ? `...${winAddr.slice(-3)}` : "TBD";
+                        
+                        return (
+                          <tr key={item.id} className="hover:bg-white/5 transition-colors group">
+                            <td className="px-6 py-4 font-mono text-zinc-400">#{item.id}</td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2 py-1 rounded-md text-sm font-mono ${item.winner ? 'bg-zinc-800 text-zinc-300' : 'text-zinc-600 italic'}`}>
+                                {shortAddr}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 font-semibold text-zinc-300">{pool} XLM</td>
+                            <td className="px-6 py-4">
+                              {item.prize_claimed ? (
+                                <span className="flex items-center gap-2 text-emerald-500 text-sm">
+                                  <CheckCircle2 className="w-4 h-4" /> Distributed
+                                </span>
+                              ) : item.winner ? (
+                                <span className="flex items-center gap-2 text-amber-500 text-sm animate-pulse">
+                                  <Clock className="w-4 h-4" /> Pending Claim
+                                </span>
+                              ) : (
+                                <span className="text-zinc-500 text-sm">Active</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
