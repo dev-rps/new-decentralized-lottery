@@ -30,7 +30,7 @@ export async function getLotteryInfo(lotteryId: number) {
   // Simulation is easier for view functions
   const simRes = await server.simulateTransaction(
     new TransactionBuilder(
-      await server.getAccount("G...",), // Dummy account for simulation
+      await server.getAccount("GCKAVAXOGCUTPZQXSVZNAMA4GKVR5NOSAKXZFF2AX44NQ7UNRTC63GTB"), // Valid dummy account for simulation
       { fee: BASE_FEE, networkPassphrase }
     )
     .addOperation(contract.call("get_lottery", xdr.ScVal.scvU32(lotteryId)))
