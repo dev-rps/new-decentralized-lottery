@@ -13,7 +13,10 @@ A fully decentralized, transparent, and permissionless lottery system built on t
 
 **Contract Address:** [`CDRTITFVPL7SMUBWKXGEHP3XUIX2A6KZ3RUMS6AIFEPOS7QGIERPG2AS`](https://stellar.expert/explorer/testnet/contract/CDRTITFVPL7SMUBWKXGEHP3XUIX2A6KZ3RUMS6AIFEPOS7QGIERPG2AS)
 
-![DApp Interface](https://github.com/user-attachments/assets/8d003d71-6507-4b22-9c60-d657b11875e2)
+![Contract Interface](<img width="1920" height="1080" alt="new contract id" src="https://github.com/user-attachments/assets/54c533b3-74ce-428e-a609-5dbb1ec90040" />)
+
+![DApp Interface](<img width="1920" height="1080" alt="fresh lottery frontend" src="https://github.com/user-attachments/assets/d6486459-c08b-4167-bc64-60baf49013c8" />
+)
 
 ---
 
