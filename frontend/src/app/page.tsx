@@ -202,9 +202,9 @@ export default function Home() {
           transition={{ delay: 0.1 }}
           className="text-5xl md:text-7xl font-extrabold tracking-tight"
         >
-          Provably Fair
+          Nexus
           <br />
-          <span className="text-gradient">On-Chain Lottery.</span>
+          <span className="text-gradient">Lottery.</span>
         </motion.h1>
         
         <motion.p 
@@ -350,29 +350,46 @@ export default function Home() {
                           <motion.div 
                             initial={{ scale: 0.9, opacity: 0 }} 
                             animate={{ scale: 1, opacity: 1 }} 
-                            className="space-y-6 p-6 rounded-2xl border border-accent-500/30 bg-accent-500/10"
+                            className={`space-y-6 p-8 rounded-3xl border ${walletAddress === winnerAddr ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-accent-500/30 bg-accent-500/10'}`}
                           >
-                            <Trophy className="w-12 h-12 text-accent-400 mx-auto" />
-                            <div>
-                              <div className="text-accent-400 font-bold mb-2">WINNER SELECTED</div>
-                              <div className="font-mono text-xs sm:text-sm text-white/80 bg-black/40 p-3 rounded-lg break-all">
+                            <Trophy className={`w-16 h-16 mx-auto ${walletAddress === winnerAddr ? 'text-emerald-400' : 'text-accent-400'}`} />
+                            
+                            <div className="space-y-2">
+                              {walletAddress === winnerAddr ? (
+                                <h3 className="text-2xl font-bold text-emerald-400">🎉 YOU WON THE LOTTERY! 🎉</h3>
+                              ) : (
+                                <div className="text-accent-400 font-bold tracking-widest uppercase">CONGRATULATIONS TO THE WINNER</div>
+                              )}
+                              
+                              <div className="font-mono text-xs sm:text-base text-white/90 bg-black/40 p-4 rounded-xl break-all border border-white/5">
                                 {winnerAddr}
                               </div>
                             </div>
                             
                             {!isClaimed ? (
-                              <button
-                                onClick={handleClaimPrize}
-                                disabled={actionLoading !== null}
-                                className="w-full max-w-sm mx-auto py-4 text-center rounded-xl font-bold text-lg bg-accent-600 hover:bg-accent-500 text-white shadow-lg shadow-accent-500/25 transition-all disabled:opacity-50"
-                              >
-                                {actionLoading === "Claim Prize" ? (
-                                  <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin w-5 h-5"/> Transferring...</span>
-                                ) : "Distribute Prize to Winner"}
-                              </button>
+                              <div className="space-y-4">
+                                <button
+                                  onClick={handleClaimPrize}
+                                  disabled={actionLoading !== null}
+                                  className={`w-full max-w-sm mx-auto py-4 text-center rounded-xl font-bold text-lg transition-all disabled:opacity-50 ${
+                                    walletAddress === winnerAddr 
+                                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/25' 
+                                    : 'bg-white text-black hover:bg-zinc-200'
+                                  }`}
+                                >
+                                  {actionLoading === "Claim Prize" ? (
+                                    <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin w-5 h-5"/> Finalizing Transfer...</span>
+                                  ) : (
+                                    walletAddress === winnerAddr ? "Claim Your Winnings Now!" : "Distribute Prize to Winner"
+                                  )}
+                                </button>
+                                {walletAddress !== winnerAddr && (
+                                  <p className="text-xs text-zinc-500 italic">Anyone can trigger the Prize Distribution to the winner's wallet.</p>
+                                )}
+                              </div>
                             ) : (
-                                <div className="inline-flex items-center gap-2 text-emerald-400 font-medium px-4 py-2 bg-emerald-400/10 rounded-full border border-emerald-400/20">
-                                  <CheckCircle2 className="w-5 h-5" /> Prize Successfully Claimed
+                                <div className="inline-flex items-center gap-2 text-emerald-400 font-bold text-lg px-6 py-3 bg-emerald-400/10 rounded-full border border-emerald-400/20 shadow-lg shadow-emerald-400/10">
+                                  <CheckCircle2 className="w-6 h-6" /> Prize Successfully Distributed
                                 </div>
                             )}
                           </motion.div>
