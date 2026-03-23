@@ -11,6 +11,14 @@ export default function Home() {
   const [status, setStatus] = useState<string | null>(null);
   const [currentLotteryId, setCurrentLotteryId] = useState<number>(1);
   const [lotteryInfo, setLotteryInfo] = useState<any>(null);
+  const [nowTs, setNowTs] = useState<number>(Math.floor(Date.now() / 1000));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowTs(Math.floor(Date.now() / 1000));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const fetchLotteryInfo = async () => {
     try {
@@ -141,7 +149,7 @@ export default function Home() {
     try {
       const XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
       const ticketPrice = BigInt(100000000);
-      const duration = BigInt(60); // 60 seconds duration for immediate testing
+      const duration = BigInt(120); // 120 seconds duration
       
       const tx = await createLotteryTx(walletAddress, XLM_SAC, ticketPrice, duration);
       
@@ -177,13 +185,12 @@ export default function Home() {
   
   if (lotteryInfo) {
       isActive = lotteryInfo.active;
-      const now = Math.floor(Date.now() / 1000);
       const end = Number(lotteryInfo.end_time);
-      if (end > now) {
-          const diff = end - now;
-          const h = Math.floor(diff / 3600);
-          const m = Math.floor((diff % 3600) / 60);
-          timeLeftStr = `${h}h ${m}m`;
+      if (end > nowTs) {
+          const diff = end - nowTs;
+          const m = Math.floor(diff / 60);
+          const s = diff % 60;
+          timeLeftStr = `${m}m ${s.toString().padStart(2, '0')}s`;
       } else {
           timeLeftStr = "Ended";
       }
