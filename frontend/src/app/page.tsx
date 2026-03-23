@@ -190,7 +190,7 @@ export default function Home() {
       
       participantCount = lotteryInfo.participants ? lotteryInfo.participants.length : 0;
       const tpStr = lotteryInfo.ticket_price ? lotteryInfo.ticket_price.toString() : "0";
-      const tp = Number(tpStr) / 100000000;
+      const tp = Number(tpStr) / 10000000;
       ticketPriceStr = tp.toString();
       poolSize = (tp * participantCount).toString();
   }
