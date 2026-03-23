@@ -77,9 +77,9 @@ export default function Home() {
         alert("Transaction failed. Check console.");
         console.error(result);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("Error buying ticket. Ensure you have tokens and Freighter is unlocked.");
+      alert("Error buying ticket: " + (e.message || String(e)));
     } finally {
       setIsDeploying(false);
       setStatus(null);
@@ -113,9 +113,9 @@ export default function Home() {
         alert("Draw failed. Ensure the lottery duration has passed.");
         console.error(result);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("Error drawing winner. Only possible after the deadline.");
+      alert("Error drawing winner: " + (e.message || String(e)));
     } finally {
       setIsDeploying(false);
       setStatus(null);
@@ -153,9 +153,9 @@ export default function Home() {
         alert("Creation failed. Check console.");
         console.error(result);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("Error creating lottery. Did you sign the transaction?");
+      alert("Error creating lottery: " + (e.message || String(e)));
     } finally {
       setIsDeploying(false);
       setStatus(null);

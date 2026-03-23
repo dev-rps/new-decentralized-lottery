@@ -61,7 +61,7 @@ export async function buyTicketTx(buyerAddress: string, lotteryId: number, token
   .setTimeout(30)
   .build();
 
-  return tx;
+  return await server.prepareTransaction(tx) as any;
 }
 
 /**
@@ -80,7 +80,7 @@ export async function drawWinnerTx(executorAddress: string, lotteryId: number) {
   .setTimeout(30)
   .build();
 
-  return tx;
+  return await server.prepareTransaction(tx) as any;
 }
 
 /**
@@ -94,13 +94,13 @@ export async function createLotteryTx(creatorAddress: string, tokenAddress: stri
     { fee: BASE_FEE, networkPassphrase }
   )
   .addOperation(contract.call("create_lottery", 
-    nativeToScVal(creatorAddress, { type: "address" }),
-    nativeToScVal(tokenAddress, { type: "address" }),
+    new Address(creatorAddress).toScVal(),
+    new Address(tokenAddress).toScVal(),
     nativeToScVal(ticketPrice, { type: "i128" }),
     nativeToScVal(duration, { type: "u64" })
   ))
   .setTimeout(30)
   .build();
 
-  return tx;
+  return await server.prepareTransaction(tx) as any;
 }
