@@ -13,7 +13,7 @@ import {
 export const rpcUrl = "https://soroban-testnet.stellar.org";
 export const networkPassphrase = Networks.TESTNET;
 export const server = new rpc.Server(rpcUrl);
-export const CONTRACT_ID = "CCFOKMU4XLGFBAQAWN7AHMVU4JRDYHGHATZPWEV7KZ4S3NVQK73AR7GS";
+export const CONTRACT_ID = "CCIZ7EKPCYIZVIQ5IEBYJJBRIA4LJWXB6NSQDPEB72HIQKQPVHVLZ3MK";
 
 /**
  * Fetch lottery info from the contract.

@@ -1,17 +1,29 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { isConnected, requestAccess, getAddress, signTransaction } from '@stellar/freighter-api';
-import { server, networkPassphrase, buyTicketTx, drawWinnerTx, createLotteryTx, getLotteryInfo, getLotteryCount, CONTRACT_ID } from '@/lib/stellar';
-import { Transaction } from '@stellar/stellar-sdk';
+import React, { useState, useEffect } from "react";
+import { isConnected, requestAccess, getAddress, signTransaction } from "@stellar/freighter-api";
+import {
+  server,
+  networkPassphrase,
+  buyTicketTx,
+  drawWinnerTx,
+  claimPrizeTx,
+  createLotteryTx,
+  getLotteryInfo,
+  getLotteryCount,
+} from "@/lib/stellar";
+import { Transaction } from "@stellar/stellar-sdk";
+import { motion, AnimatePresence } from "framer-motion";
+import { Trophy, Clock, Users, Ticket, Coins, Sparkles, Loader2, Plus, LogIn, ExternalLink } from "lucide-react";
 
 export default function Home() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-  const [currentLotteryId, setCurrentLotteryId] = useState<number>(1);
+  const [currentLotteryId, setCurrentLotteryId] = useState<number>(0);
   const [lotteryInfo, setLotteryInfo] = useState<any>(null);
   const [nowTs, setNowTs] = useState<number>(Math.floor(Date.now() / 1000));
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -38,294 +50,420 @@ export default function Home() {
 
   useEffect(() => {
     fetchLotteryInfo();
-    const interval = setInterval(fetchLotteryInfo, 10000); // poll every 10s
+    const interval = setInterval(fetchLotteryInfo, 10000);
     return () => clearInterval(interval);
   }, []);
 
   const connectWallet = async () => {
     try {
-      const installed = await isConnected();
-      if (!installed) {
-        alert("Freighter wallet is not installed. Please install the extension.");
-        return;
-      }
-      
-      const access = await requestAccess();
-      if (typeof access === 'string') {
-        setWalletAddress(access);
+      if (await isConnected()) {
+        await requestAccess();
+        const address = await getAddress();
+        setWalletAddress(address.address);
       } else {
-        const pk = await getAddress();
-        if (pk.address) setWalletAddress(pk.address);
+        alert("Freighter wallet not installed!");
       }
-    } catch (e) {
-      console.error(e);
-      alert("Failed to connect Freighter. Did you open the extension?");
+    } catch (error) {
+      console.error("Wallet connection failed", error);
     }
   };
 
-  const handleBuyTicket = async () => {
+  const executeTxInfo = async (
+    actionName: string,
+    txBuilderCall: () => Promise<any>,
+    successMessage: string
+  ) => {
     if (!walletAddress) {
       alert("Please connect your wallet first.");
       return;
     }
-
-    setIsDeploying(true);
-    setStatus("Preparing transaction...");
+    setActionLoading(actionName);
+    setStatus(`Preparing ${actionName}...`);
 
     try {
-      // For demo purposes, we use a fixed token address (SAC XLM on Testnet)
-      const XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
-      const tx = await buyTicketTx(walletAddress, currentLotteryId, XLM_SAC, BigInt(100000000));
-      
+      const tx = await txBuilderCall();
       setStatus("Waiting for Freighter signature...");
       const signResult = await signTransaction(tx.toXDR(), { networkPassphrase });
-      const signedXdr = typeof signResult === 'string' ? signResult : signResult.signedTxXdr;
-      
-      setStatus("Submitting to Stellar Testnet...");
+      const signedXdr = typeof signResult === "string" ? signResult : signResult.signedTxXdr;
+
+      setStatus(`Executing ${actionName} on Soroban...`);
       const txToSubmit = new Transaction(signedXdr, networkPassphrase);
       const result = await server.sendTransaction(txToSubmit);
-      
+
       if (result.status !== "ERROR") {
-        alert("Success! Transaction submitted to the network.");
-        fetchLotteryInfo();
+        alert(successMessage);
+        setStatus("Waiting for ledger sync...");
+        setTimeout(fetchLotteryInfo, 3000);
       } else {
-        alert("Transaction failed. Check console.");
-        console.error(result);
+        throw new Error("Transaction execution returned ERROR");
       }
     } catch (e: any) {
       console.error(e);
-      alert("Error buying ticket: " + (e.message || String(e)));
+      alert(`Error during ${actionName}: ${e.message || String(e)}`);
     } finally {
-      setIsDeploying(false);
+      setActionLoading(null);
       setStatus(null);
     }
   };
 
-  const handleDrawWinner = async () => {
-    if (!walletAddress) {
-      alert("Please connect your wallet first.");
-      return;
-    }
-
+  const handleCreateLottery = () => {
     setIsDeploying(true);
-    setStatus("Preparing draw transaction...");
-
-    try {
-      const tx = await drawWinnerTx(walletAddress, currentLotteryId);
-      
-      setStatus("Waiting for Freighter signature...");
-      const signResult = await signTransaction(tx.toXDR(), { networkPassphrase });
-      const signedXdr = typeof signResult === 'string' ? signResult : signResult.signedTxXdr;
-      
-      setStatus("Executing Draw on Soroban...");
-      const txToSubmit = new Transaction(signedXdr, networkPassphrase);
-      const result = await server.sendTransaction(txToSubmit);
-      
-      if (result.status !== "ERROR") {
-        alert("Success! Draw transaction submitted to the network.");
-        fetchLotteryInfo();
-      } else {
-        alert("Draw failed. Ensure the lottery duration has passed.");
-        console.error(result);
-      }
-    } catch (e: any) {
-      console.error(e);
-      alert("Error drawing winner: " + (e.message || String(e)));
-    } finally {
-      setIsDeploying(false);
-      setStatus(null);
-    }
+    executeTxInfo(
+      "Create Pool",
+      async () => {
+        const XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
+        const ticketPrice = BigInt(100000000); // 10 XLM
+        const duration = BigInt(120); // 120s
+        return await createLotteryTx(walletAddress!, XLM_SAC, ticketPrice, duration);
+      },
+      "Success! New lottery pool created. Discovering pool ID..."
+    ).finally(() => setIsDeploying(false));
   };
 
-  const handleCreateLottery = async () => {
-    if (!walletAddress) {
-      alert("Please connect your wallet first.");
-      return;
-    }
-
-    setIsDeploying(true);
-    setStatus("Creating new prize pool...");
-
-    try {
-      const XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
-      const ticketPrice = BigInt(100000000);
-      const duration = BigInt(120); // 120 seconds duration
-      
-      const tx = await createLotteryTx(walletAddress, XLM_SAC, ticketPrice, duration);
-      
-      setStatus("Waiting for Freighter signature...");
-      const signResult = await signTransaction(tx.toXDR(), { networkPassphrase });
-      const signedXdr = typeof signResult === 'string' ? signResult : signResult.signedTxXdr;
-      
-      setStatus("Deploying Lottery to Soroban...");
-      const txToSubmit = new Transaction(signedXdr, networkPassphrase);
-      const result = await server.sendTransaction(txToSubmit);
-      
-      if (result.status !== "ERROR") {
-        alert("Success! New lottery created. Discovering your pool ID...");
-        setTimeout(fetchLotteryInfo, 2000); // Give Soroban a moment to index
-      } else {
-        alert("Creation failed. Check console.");
-        console.error(result);
-      }
-    } catch (e: any) {
-      console.error(e);
-      alert("Error creating lottery: " + (e.message || String(e)));
-    } finally {
-      setIsDeploying(false);
-      setStatus(null);
-    }
+  const handleBuyTicket = () => {
+    executeTxInfo(
+      "Buy Ticket",
+      async () => {
+        const XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
+        return await buyTicketTx(walletAddress!, currentLotteryId, XLM_SAC, BigInt(100000000));
+      },
+      "Ticket purchased successfully! Good luck!"
+    );
   };
 
+  const handleDrawWinner = () => {
+    executeTxInfo(
+      "Draw Winner",
+      async () => await drawWinnerTx(walletAddress!, currentLotteryId),
+      "Winner drawn successfully!"
+    );
+  };
+
+  const handleClaimPrize = () => {
+    executeTxInfo(
+      "Claim Prize",
+      async () => await claimPrizeTx(walletAddress!, currentLotteryId),
+      "Prize claimed successfully!"
+    );
+  };
+
+  // State calculations
   let isActive = false;
-  let timeLeftStr = "N/A";
-  let poolSize = "0";
+  let isClaimed = false;
+  let isDrawn = false;
+  let winnerAddr: string | null = null;
+  let timeLeftStr = "Loading...";
   let participantCount = 0;
   let ticketPriceStr = "10";
-  
+  let poolSizeStr = "0";
+  let canDraw = false;
+
   if (lotteryInfo) {
-      isActive = lotteryInfo.active;
-      const end = Number(lotteryInfo.end_time);
-      if (end > nowTs) {
-          const diff = end - nowTs;
-          const m = Math.floor(diff / 60);
-          const s = diff % 60;
-          timeLeftStr = `${m}m ${s.toString().padStart(2, '0')}s`;
-      } else {
-          timeLeftStr = "Ended";
-      }
-      
-      participantCount = lotteryInfo.participants ? lotteryInfo.participants.length : 0;
-      const tpStr = lotteryInfo.ticket_price ? lotteryInfo.ticket_price.toString() : "0";
-      const tp = Number(tpStr) / 10000000;
-      ticketPriceStr = tp.toString();
-      poolSize = (tp * participantCount).toString();
+    isActive = lotteryInfo.active;
+    isClaimed = lotteryInfo.prize_claimed;
+    winnerAddr = lotteryInfo.winner ? String(lotteryInfo.winner) : null;
+    isDrawn = !isActive && winnerAddr !== null;
+
+    const end = Number(lotteryInfo.end_time);
+    if (end > nowTs) {
+      const diff = end - nowTs;
+      const m = Math.floor(diff / 60);
+      const s = diff % 60;
+      timeLeftStr = `${m}m ${s.toString().padStart(2, "0")}s`;
+    } else {
+      timeLeftStr = "Ended";
+      if (isActive) canDraw = true;
+    }
+
+    participantCount = lotteryInfo.participants ? lotteryInfo.participants.length : 0;
+    const tpStr = lotteryInfo.ticket_price ? lotteryInfo.ticket_price.toString() : "0";
+    const tp = Number(tpStr) / 10000000;
+    ticketPriceStr = tp.toString();
+    poolSizeStr = (tp * participantCount).toString();
   }
 
   return (
-    <main className="min-h-screen p-8 flex flex-col items-center justify-center relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-violet-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-50"></div>
-      <div className="absolute top-[20%] right-[-10%] w-96 h-96 bg-pink-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-50"></div>
-      <div className="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-50"></div>
-
-      <div className="absolute top-6 right-8 z-20">
-        <button 
-          onClick={connectWallet}
-          className="px-6 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full font-medium transition-all backdrop-blur-md shadow-lg cursor-pointer"
+    <div className="flex flex-col gap-12 pb-20 w-full animate-in fade-in duration-500">
+      
+      {/* Hero Section */}
+      <section className="text-center space-y-6 pt-10">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-300 text-sm font-medium mb-4"
         >
-          {walletAddress 
-            ? `${walletAddress.substring(0, 4)}...${walletAddress.substring(walletAddress.length - 4)}` 
-            : "Connect Freighter"}
-        </button>
-      </div>
+          <Sparkles className="w-4 h-4" />
+          <span>Stellar Testnet Live</span>
+        </motion.div>
+        
+        <motion.h1 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="text-5xl md:text-7xl font-extrabold tracking-tight"
+        >
+          Provably Fair
+          <br />
+          <span className="text-gradient">On-Chain Lottery.</span>
+        </motion.h1>
+        
+        <motion.p 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="text-zinc-400 max-w-2xl mx-auto text-lg md:text-xl"
+        >
+          Participate in trustless prize pools powered by Soroban smart contracts. No middlemen, verifiable randomness.
+        </motion.p>
 
-      <div className="z-10 w-full max-w-5xl flex flex-col items-center space-y-16">
-        <header className="text-center space-y-6 mt-12">
-          <div className="inline-block px-4 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 font-medium text-sm mb-4">
-            Built on Soroban
-          </div>
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight">
-            Decentralized <span className="gradient-text">Lottery</span>
-          </h1>
-          <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-            100% Permissionless. Transparent. Secure. Play and win autonomously on the Stellar network.
-          </p>
-          {status && (
-            <div className="animate-pulse text-violet-400 font-bold tracking-widest uppercase text-sm mt-4">
-              {status}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="pt-6"
+        >
+          {!walletAddress ? (
+            <button
+              onClick={connectWallet}
+              className="group relative inline-flex items-center gap-3 px-8 py-4 bg-white text-black rounded-2xl font-semibold text-lg hover:scale-105 transition-all shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)]"
+            >
+              <LogIn className="w-5 h-5" />
+              Connect Freighter
+            </button>
+          ) : (
+            <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-zinc-900 border border-white/10 text-zinc-300">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-mono text-sm">
+                Connected: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+              </span>
             </div>
           )}
-        </header>
+        </motion.div>
+      </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
-          {/* Active Lottery Card */}
-          <div className="glass-panel p-10 rounded-3xl flex flex-col justify-between transform transition duration-500 hover:scale-[1.02] border-t border-l border-white/20 relative z-10">
-            <div className={isDeploying ? "opacity-50 pointer-events-none" : ""}>
-              <div className="flex justify-between items-center mb-8">
-                {lotteryInfo ? (
-                  <span className={`px-4 py-1.5 rounded-full text-sm font-bold tracking-wide border shadow-[0_0_15px_rgba(34,197,94,0.3)] ${isActive ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}`}>
-                    {isActive ? "ACTIVE" : "ENDED"}
-                  </span>
-                ) : (
-                  <span className="bg-slate-500/20 text-slate-400 px-4 py-1.5 rounded-full text-sm font-bold tracking-wide border border-slate-500/30 shadow-[0_0_15px_rgba(148,163,184,0.3)]">
-                    NO POOL
-                  </span>
-                )}
-                <span className="text-slate-300 text-sm font-medium bg-slate-800/50 px-4 py-1.5 rounded-full">
-                  Pool ID: <span className="text-violet-400 font-bold ml-1">#{currentLotteryId}</span>
+      {/* Main App Grid */}
+      {walletAddress && (
+        <div className="grid lg:grid-cols-12 gap-8 items-start relative z-10 w-full">
+          
+          {/* Active Pool Card (Left Column) */}
+          <div className="lg:col-span-8 space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-semibold flex items-center gap-2">
+                <Trophy className="w-6 h-6 text-brand-400" /> Current Pool
+              </h2>
+              {currentLotteryId > 0 && (
+                <span className="px-3 py-1 bg-zinc-800 rounded-lg text-xs font-mono border border-white/5 text-zinc-400">
+                  ID: #{currentLotteryId}
                 </span>
-                <span className="text-slate-300 text-sm font-medium bg-slate-800/50 px-4 py-1.5 rounded-full">
-                  Time left: <span className="text-white font-bold ml-1">{timeLeftStr}</span>
-                </span>
-              </div>
-              <h2 className="text-3xl font-bold mb-4 text-white">Main Prize Pool</h2>
-              <div className="flex items-baseline space-x-3 my-8">
-                <span className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
-                  {poolSize}
-                </span>
-                <span className="text-2xl text-violet-400 uppercase font-black tracking-widest">XLM</span>
-              </div>
-              <div className="space-y-3 mb-10 bg-black/20 p-6 rounded-2xl border border-white/5">
-                <div className="flex justify-between">
-                  <span className="text-slate-400 text-sm">Ticket Price</span>
-                  <span className="text-white font-bold">{ticketPriceStr} XLM</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400 text-sm">Participants</span>
-                  <span className="text-white font-bold">{participantCount} Players</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400 text-sm">Contract</span>
-                  <span className="text-violet-400 font-mono text-sm tracking-tighter">{CONTRACT_ID.substring(0, 4)}...{CONTRACT_ID.substring(CONTRACT_ID.length - 4)}</span>
-                </div>
-              </div>
+              )}
             </div>
-            
-            <button 
-              onClick={handleBuyTicket}
-              disabled={isDeploying || !lotteryInfo || !isActive}
-              className="w-full bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white font-bold text-lg py-5 rounded-xl shadow-[0_0_30px_rgba(139,92,246,0.4)] transition-all transform active:scale-95 duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isDeploying ? "Processing..." : (!lotteryInfo ? "Create Pool First" : "Buy Ticket Now")}
-            </button>
+
+            <div className="glass-card rounded-3xl p-8 relative overflow-hidden">
+              {/* Background glow for card */}
+              <div className="absolute -top-40 -right-40 w-96 h-96 bg-brand-500/20 rounded-full blur-[100px] pointer-events-none" />
+              
+              {!lotteryInfo ? (
+                <div className="h-64 flex flex-col items-center justify-center text-zinc-500 gap-4">
+                  <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
+                  <p>Discovering active pools...</p>
+                </div>
+              ) : (
+                <div className="relative z-10 space-y-10">
+                  {/* Stats Row */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div className="space-y-2">
+                      <div className="text-zinc-400 text-sm flex items-center gap-2">
+                        <Coins className="w-4 h-4" /> Prize Pool
+                      </div>
+                      <div className="text-3xl font-bold tracking-tight text-white">{poolSizeStr} <span className="text-lg text-brand-400">XLM</span></div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="text-zinc-400 text-sm flex items-center gap-2">
+                        <Users className="w-4 h-4" /> Entries
+                      </div>
+                      <div className="text-3xl font-bold tracking-tight text-white">{participantCount}</div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="text-zinc-400 text-sm flex items-center gap-2">
+                        <Ticket className="w-4 h-4" /> Ticket Price
+                      </div>
+                      <div className="text-3xl font-bold tracking-tight text-white">{ticketPriceStr} <span className="text-lg text-zinc-500">XLM</span></div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="text-zinc-400 text-sm flex items-center gap-2">
+                        <Clock className="w-4 h-4" /> Status
+                      </div>
+                      <div className="text-3xl font-bold tracking-tight text-white">
+                        {isActive ? (
+                          <span className="text-emerald-400 font-mono">{timeLeftStr}</span>
+                        ) : isClaimed ? (
+                          <span className="text-zinc-500 text-xl">Completed</span>
+                        ) : isDrawn ? (
+                          <span className="text-accent-400 text-xl animate-pulse">Pending Claim</span>
+                        ) : (
+                          <span className="text-amber-400 text-xl">Draw Ready</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <hr className="border-white/5" />
+
+                  {/* Actions Area */}
+                  <div className="flex flex-col items-center justify-center p-6 bg-black/20 rounded-2xl border border-white/5">
+                    {isActive ? (
+                      <div className="text-center space-y-6 w-full max-w-md">
+                        <button
+                          onClick={handleBuyTicket}
+                          disabled={actionLoading !== null}
+                          className="w-full py-4 text-center rounded-xl font-bold text-lg bg-gradient-to-r from-brand-600 to-accent-600 hover:from-brand-500 hover:to-accent-500 text-white shadow-lg shadow-brand-500/25 transition-all disabled:opacity-50 disabled:scale-100 transform active:scale-95"
+                        >
+                          {actionLoading === "Buy Ticket" ? (
+                            <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin w-5 h-5"/> Processing...</span>
+                          ) : (
+                            `Buy Ticket (${ticketPriceStr} XLM)`
+                          )}
+                        </button>
+                        <p className="text-xs text-zinc-500">Requires Freighter. Testnet XLM only.</p>
+                      </div>
+                    ) : (
+                      <div className="text-center space-y-6 w-full">
+                        {!isDrawn ? (
+                          <div className="space-y-4">
+                            <h3 className="text-xl font-semibold text-amber-400 flex items-center justify-center gap-2">
+                              <AlertCircle className="w-5 h-5"/> Lottery Ended
+                            </h3>
+                            <button
+                              onClick={handleDrawWinner}
+                              disabled={actionLoading !== null || !canDraw}
+                              className="w-full max-w-sm mx-auto py-4 text-center rounded-xl font-bold text-lg bg-white text-black hover:bg-zinc-200 transition-all disabled:opacity-50"
+                            >
+                              {actionLoading === "Draw Winner" ? (
+                                <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin w-5 h-5"/> Generating Randomness...</span>
+                              ) : "Execute Random Draw"}
+                            </button>
+                          </div>
+                        ) : (
+                          <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }} 
+                            animate={{ scale: 1, opacity: 1 }} 
+                            className="space-y-6 p-6 rounded-2xl border border-accent-500/30 bg-accent-500/10"
+                          >
+                            <Trophy className="w-12 h-12 text-accent-400 mx-auto" />
+                            <div>
+                              <div className="text-accent-400 font-bold mb-2">WINNER SELECTED</div>
+                              <div className="font-mono text-xs sm:text-sm text-white/80 bg-black/40 p-3 rounded-lg break-all">
+                                {winnerAddr}
+                              </div>
+                            </div>
+                            
+                            {!isClaimed ? (
+                              <button
+                                onClick={handleClaimPrize}
+                                disabled={actionLoading !== null}
+                                className="w-full max-w-sm mx-auto py-4 text-center rounded-xl font-bold text-lg bg-accent-600 hover:bg-accent-500 text-white shadow-lg shadow-accent-500/25 transition-all disabled:opacity-50"
+                              >
+                                {actionLoading === "Claim Prize" ? (
+                                  <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin w-5 h-5"/> Transferring...</span>
+                                ) : "Distribute Prize to Winner"}
+                              </button>
+                            ) : (
+                                <div className="inline-flex items-center gap-2 text-emerald-400 font-medium px-4 py-2 bg-emerald-400/10 rounded-full border border-emerald-400/20">
+                                  <CheckCircle2 className="w-5 h-5" /> Prize Successfully Claimed
+                                </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Manage / Permissionless Interactions */}
-          <div className="flex flex-col gap-6 relative z-10">
-            <div className="glass-panel p-8 rounded-3xl flex-1 flex flex-col justify-center items-center text-center group border-white/5 hover:border-violet-500/30 transition-colors">
-              <div className="w-16 h-16 bg-violet-500/20 rounded-2xl mb-6 flex items-center justify-center text-violet-400 group-hover:scale-110 transition-transform">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-              </div>
-              <h3 className="text-2xl font-bold mb-3 text-white">Create New Lottery</h3>
-              <p className="text-slate-400 mb-8 max-w-sm">Permissionlessly start a new prize pool. You define the ticket price and duration.</p>
-              <button 
+          {/* Side Panel (Right Column) */}
+          <div className="lg:col-span-4 space-y-6">
+            <h2 className="text-2xl font-semibold opacity-0 select-none hidden lg:block">Panel</h2>
+            
+            {/* Status Window */}
+            {status && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass-card rounded-2xl p-5 border-brand-500/30 bg-brand-500/5 relative overflow-hidden"
+              >
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-400 to-accent-500 animate-pulse" />
+                <div className="flex items-center gap-3 text-sm font-medium text-brand-300">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {status}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Admin/Creator Panel */}
+            <div className="glass-card rounded-3xl p-6 space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-accent-400" /> Start New Pool
+              </h3>
+              <p className="text-sm text-zinc-400">
+                Deploy a brand new permissionless lottery instance on the Stellar network.
+              </p>
+              
+              <button
                 onClick={handleCreateLottery}
-                disabled={isDeploying}
-                className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-bold transition-colors w-full text-white cursor-pointer hover:shadow-lg disabled:opacity-50"
+                disabled={isDeploying || (isActive && currentLotteryId > 0)}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-medium transition-colors disabled:opacity-50 border border-white/5"
               >
-                {isDeploying ? "Initializing..." : "Launch New Pool"}
+                {isDeploying ? (
+                  <Loader2 className="animate-spin w-4 h-4" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )}
+                {isDeploying ? "Deploying..." : "Launch New Pool (10 XLM)"}
               </button>
+              {isActive && (
+                <p className="text-xs text-amber-500/80 text-center">Cannot create while current pool is active.</p>
+              )}
             </div>
-            
-            <div className="glass-panel p-8 rounded-3xl flex-1 flex flex-col justify-center items-center text-center group border-orange-500/10 hover:border-orange-500/30 transition-colors relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent"></div>
-              <div className="w-16 h-16 bg-orange-500/20 rounded-2xl mb-6 flex items-center justify-center text-orange-400 group-hover:scale-110 transition-transform relative z-10">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.2-1.1.5l-1.3 2.6c-.2.4-.1.9.2 1.2L7 14l-3 3-1-1-2 2 4 4 2-2-1-1 3-3 3.5 4.3c.3.4.8.5 1.2.2l2.6-1.3c.4-.2.7-.6.5-1.1z"/></svg>
-              </div>
-              <h3 className="text-2xl font-bold mb-3 text-white relative z-10">Draw Winner</h3>
-              <p className="text-slate-400 mb-8 max-w-sm relative z-10">Conclude an ended lottery using Soroban's native PRNG. Anyone can execute this.</p>
-              <button 
-                onClick={handleDrawWinner}
-                disabled={isDeploying}
-                className="px-8 py-4 bg-gradient-to-r from-orange-500/20 to-red-500/20 hover:from-orange-500/30 hover:to-red-500/30 text-orange-200 border border-orange-500/30 rounded-xl font-bold transition-colors w-full relative z-10 hover:shadow-[0_0_20px_rgba(249,115,22,0.2)] cursor-pointer disabled:opacity-50"
-              >
-                {isDeploying ? "Drawing..." : "Execute Random Draw"}
-              </button>
+
+            {/* Info Card */}
+            <div className="rounded-3xl p-6 bg-zinc-900/50 border border-white/5 space-y-4 text-sm text-zinc-400">
+              <p className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-brand-400" /> Contract managed natively via Soroban PRNG algorithm.
+              </p>
+              <a href="https://stellar.expert" target="_blank" rel="noreferrer" className="flex items-center gap-2 text-zinc-300 hover:text-white transition-colors">
+                <ExternalLink className="w-4 h-4" /> View Ledger Explorer
+              </a>
             </div>
           </div>
+
         </div>
-      </div>
-    </main>
+      )}
+    </div>
+  );
+}
+
+// Inline shield icon because it was missed in lucide import
+function ShieldCheck(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
   );
 }

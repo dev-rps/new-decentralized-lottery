@@ -17,6 +17,7 @@ pub struct LotteryInfo {
     pub participants: Vec<Address>,
     pub winner: Option<Address>,
     pub active: bool,
+    pub prize_claimed: bool,
 }
 
 #[contract]
@@ -40,6 +41,7 @@ impl LotteryContract {
             participants: vec![&env],
             winner: None,
             active: true,
+            prize_claimed: false,
         };
         
         env.storage().persistent().set(&DataKey::Lottery(counter), &info);
@@ -85,15 +87,32 @@ impl LotteryContract {
         let winner_index = env.prng().gen_range::<u64>(0u64..(participants_len as u64)) as u32;
         let winner = info.participants.get(winner_index).unwrap();
         
-        let total_prize = info.ticket_price.saturating_mul(participants_len as i128);
-        
-        let token_client = token::Client::new(&env, &info.token);
-        token_client.transfer(&env.current_contract_address(), &winner, &total_prize);
-        
         info.winner = Some(winner);
         info.active = false;
         
         env.storage().persistent().set(&DataKey::Lottery(lottery_id), &info);
+    }
+    
+    /// Permissionless claim function: anyone can trigger it after draw_winner.
+    pub fn claim_prize(env: Env, lottery_id: u32) {
+        let mut info: LotteryInfo = env.storage().persistent().get(&DataKey::Lottery(lottery_id))
+            .expect("Lottery not found");
+            
+        assert!(!info.active, "Lottery is still active or not drawn");
+        assert!(!info.prize_claimed, "Prize already claimed");
+        
+        if let Some(winner) = info.winner.clone() {
+            let participants_len = info.participants.len();
+            let total_prize = info.ticket_price.saturating_mul(participants_len as i128);
+            
+            let token_client = token::Client::new(&env, &info.token);
+            token_client.transfer(&env.current_contract_address(), &winner, &total_prize);
+            
+            info.prize_claimed = true;
+            env.storage().persistent().set(&DataKey::Lottery(lottery_id), &info);
+        } else {
+            panic!("No winner to claim the prize");
+        }
     }
     
     /// View function to get lottery information.

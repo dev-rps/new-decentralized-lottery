@@ -190,6 +190,7 @@
     [],
     [],
     [],
+    [],
     []
   ],
   "ledger": {
@@ -300,6 +301,14 @@
                           "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
                         }
                       ]
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "prize_claimed"
+                    },
+                    "val": {
+                      "bool": true
                     }
                   },
                   {

@@ -61,6 +61,9 @@ fn test_permissionless_lottery() {
     // Permissionless draw_winner
     client.draw_winner(&lottery_id);
     
+    // Permissionless claim_prize
+    client.claim_prize(&lottery_id);
+    
     // Contract balance should be 0 now (except if it was randomly chosen, but here participants are buyer1 and buyer2 plus possibly the initially pushed "env" ? Wait, in lib.rs it pushes `&env` address ? No `&env` address doesn't exist, we pushed the contract address as first.)
     // Let's check who won. One of them got 20 tokens.
     let bal1 = token.balance(&buyer1);

@@ -1,35 +1,37 @@
 @import "tailwindcss";
 
 :root {
-  --color-background: #0f172a;
-  --color-foreground: #f8fafc;
-  --color-primary: #8b5cf6;
+  --color-background: #0a0a0b;
+  --color-foreground: #f4f4f5;
+  --color-brand: #8b5cf6;
   --color-accent: #ec4899;
 }
 
-body {
-  background-color: var(--color-background);
-  color: var(--color-foreground);
-  background-image: 
-    radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.15), transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.15), transparent 25%);
-  background-attachment: fixed;
-  font-family: Arial, Helvetica, sans-serif;
-  margin: 0;
-  padding: 0;
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    background-image: 
+      radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.1) 0%, transparent 40%),
+      radial-gradient(circle at 100% 100%, rgba(236, 72, 153, 0.1) 0%, transparent 40%);
+    background-attachment: fixed;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    @apply antialiased selection:bg-brand-500/30 selection:text-brand-100;
+  }
 }
 
-.glass-panel {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-}
+@layer utilities {
+  .glass-card {
+    @apply bg-zinc-900/40 backdrop-blur-xl border border-white/5 shadow-2xl;
+  }
+  
+  .glass-card-hover {
+    @apply transition-all duration-300 hover:bg-zinc-800/40 hover:border-white/10 hover:shadow-brand-500/20;
+  }
 
-.gradient-text {
-  background: linear-gradient(to right, var(--color-primary), var(--color-accent));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-300 via-brand-500 to-accent-400;
+  }
 }
