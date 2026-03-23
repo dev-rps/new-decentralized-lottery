@@ -335,7 +335,8 @@ export default function Home() {
 
                   {/* Actions Area */}
                   <div className="flex flex-col items-center justify-center p-6 bg-black/20 rounded-2xl border border-white/5">
-                    {isActive ? (
+                    {/* STATE 1: Timer still running → Buy Ticket */}
+                    {isActive && !canDraw ? (
                       <div className="text-center space-y-6 w-full max-w-md">
                         <button
                           onClick={handleBuyTicket}
@@ -350,71 +351,88 @@ export default function Home() {
                         </button>
                         <p className="text-xs text-zinc-500">Requires Freighter. Testnet XLM only.</p>
                       </div>
-                    ) : (
-                      <div className="text-center space-y-6 w-full">
-                        {!isDrawn ? (
+
+                    /* STATE 2: Timer ended, active=true, no winner yet → Execute Draw */
+                    ) : canDraw ? (
+                      <div className="text-center space-y-4 w-full">
+                        <h3 className="text-xl font-semibold text-amber-400 flex items-center justify-center gap-2">
+                          <AlertCircle className="w-5 h-5"/> Lottery Ended — Ready to Draw
+                        </h3>
+                        <button
+                          onClick={() => handleDrawWinner()}
+                          disabled={actionLoading !== null}
+                          className="w-full max-w-sm mx-auto py-4 text-center rounded-xl font-bold text-lg bg-white text-black hover:bg-zinc-200 transition-all disabled:opacity-50"
+                        >
+                          {actionLoading === "Draw Winner" ? (
+                            <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin w-5 h-5"/> Generating Randomness...</span>
+                          ) : "Execute Random Draw"}
+                        </button>
+                      </div>
+
+                    /* STATE 3: Draw done, winner selected → Show winner + Claim */
+                    ) : isDrawn ? (
+                      <motion.div 
+                        initial={{ scale: 0.9, opacity: 0 }} 
+                        animate={{ scale: 1, opacity: 1 }} 
+                        className={`space-y-6 p-8 rounded-3xl border w-full ${walletAddress === winnerAddr ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-accent-500/30 bg-accent-500/10'}`}
+                      >
+                        <Trophy className={`w-16 h-16 mx-auto ${walletAddress === winnerAddr ? 'text-emerald-400' : 'text-accent-400'}`} />
+                        
+                        <div className="space-y-2 text-center">
+                          {walletAddress === winnerAddr ? (
+                            <h3 className="text-2xl font-bold text-emerald-400">🎉 YOU WON THE LOTTERY! 🎉</h3>
+                          ) : (
+                            <div className="text-accent-400 font-bold tracking-widest uppercase">CONGRATULATIONS TO THE WINNER</div>
+                          )}
+                          
+                          <div className="font-mono text-xs sm:text-base text-white/90 bg-black/40 p-4 rounded-xl break-all border border-white/5">
+                            {winnerAddr}
+                          </div>
+                        </div>
+                        
+                        {!isClaimed ? (
                           <div className="space-y-4">
-                            <h3 className="text-xl font-semibold text-amber-400 flex items-center justify-center gap-2">
-                              <AlertCircle className="w-5 h-5"/> Lottery Ended
-                            </h3>
                             <button
-                              onClick={() => handleDrawWinner()}
-                              disabled={actionLoading !== null || !canDraw}
-                              className="w-full max-w-sm mx-auto py-4 text-center rounded-xl font-bold text-lg bg-white text-black hover:bg-zinc-200 transition-all disabled:opacity-50"
+                              onClick={() => handleClaimPrize()}
+                              disabled={actionLoading !== null}
+                              className={`w-full max-w-sm mx-auto py-4 text-center rounded-xl font-bold text-lg transition-all disabled:opacity-50 ${
+                                walletAddress === winnerAddr 
+                                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/25' 
+                                : 'bg-white text-black hover:bg-zinc-200'
+                              }`}
                             >
-                              {actionLoading === "Draw Winner" ? (
-                                <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin w-5 h-5"/> Generating Randomness...</span>
-                              ) : "Execute Random Draw"}
+                              {actionLoading === "Claim Prize" ? (
+                                <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin w-5 h-5"/> Finalizing Transfer...</span>
+                              ) : (
+                                walletAddress === winnerAddr ? "Claim Your Winnings Now!" : "Distribute Prize to Winner"
+                              )}
                             </button>
+                            {walletAddress !== winnerAddr && (
+                              <p className="text-xs text-zinc-500 italic">Anyone can trigger the Prize Distribution to the winner&apos;s wallet.</p>
+                            )}
                           </div>
                         ) : (
-                          <motion.div 
-                            initial={{ scale: 0.9, opacity: 0 }} 
-                            animate={{ scale: 1, opacity: 1 }} 
-                            className={`space-y-6 p-8 rounded-3xl border ${walletAddress === winnerAddr ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-accent-500/30 bg-accent-500/10'}`}
-                          >
-                            <Trophy className={`w-16 h-16 mx-auto ${walletAddress === winnerAddr ? 'text-emerald-400' : 'text-accent-400'}`} />
-                            
-                            <div className="space-y-2">
-                              {walletAddress === winnerAddr ? (
-                                <h3 className="text-2xl font-bold text-emerald-400">🎉 YOU WON THE LOTTERY! 🎉</h3>
-                              ) : (
-                                <div className="text-accent-400 font-bold tracking-widest uppercase">CONGRATULATIONS TO THE WINNER</div>
-                              )}
-                              
-                              <div className="font-mono text-xs sm:text-base text-white/90 bg-black/40 p-4 rounded-xl break-all border border-white/5">
-                                {winnerAddr}
-                              </div>
+                            <div className="inline-flex items-center gap-2 text-emerald-400 font-bold text-lg px-6 py-3 bg-emerald-400/10 rounded-full border border-emerald-400/20 shadow-lg shadow-emerald-400/10">
+                              <CheckCircle2 className="w-6 h-6" /> Prize Successfully Distributed
                             </div>
-                            
-                            {!isClaimed ? (
-                              <div className="space-y-4">
-                                <button
-                                  onClick={() => handleClaimPrize()}
-                                  disabled={actionLoading !== null}
-                                  className={`w-full max-w-sm mx-auto py-4 text-center rounded-xl font-bold text-lg transition-all disabled:opacity-50 ${
-                                    walletAddress === winnerAddr 
-                                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/25' 
-                                    : 'bg-white text-black hover:bg-zinc-200'
-                                  }`}
-                                >
-                                  {actionLoading === "Claim Prize" ? (
-                                    <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin w-5 h-5"/> Finalizing Transfer...</span>
-                                  ) : (
-                                    walletAddress === winnerAddr ? "Claim Your Winnings Now!" : "Distribute Prize to Winner"
-                                  )}
-                                </button>
-                                {walletAddress !== winnerAddr && (
-                                  <p className="text-xs text-zinc-500 italic">Anyone can trigger the Prize Distribution to the winner's wallet.</p>
-                                )}
-                              </div>
-                            ) : (
-                                <div className="inline-flex items-center gap-2 text-emerald-400 font-bold text-lg px-6 py-3 bg-emerald-400/10 rounded-full border border-emerald-400/20 shadow-lg shadow-emerald-400/10">
-                                  <CheckCircle2 className="w-6 h-6" /> Prize Successfully Distributed
-                                </div>
-                            )}
-                          </motion.div>
                         )}
+                      </motion.div>
+
+                    /* STATE 4: Fallback — lottery ended, no winner set, not active */
+                    ) : (
+                      <div className="text-center space-y-4 w-full">
+                        <h3 className="text-xl font-semibold text-amber-400 flex items-center justify-center gap-2">
+                          <AlertCircle className="w-5 h-5"/> Lottery Ended
+                        </h3>
+                        <button
+                          onClick={() => handleDrawWinner()}
+                          disabled={actionLoading !== null}
+                          className="w-full max-w-sm mx-auto py-4 text-center rounded-xl font-bold text-lg bg-white text-black hover:bg-zinc-200 transition-all disabled:opacity-50"
+                        >
+                          {actionLoading === "Draw Winner" ? (
+                            <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin w-5 h-5"/> Generating Randomness...</span>
+                          ) : "Execute Random Draw"}
+                        </button>
                       </div>
                     )}
                   </div>
