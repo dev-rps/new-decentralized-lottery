@@ -23,21 +23,26 @@ export async function getLotteryInfo(lotteryId: number) {
   
 
 
-  // Simulation is easier for view functions
-  const simRes = await server.simulateTransaction(
-    new TransactionBuilder(
-      await server.getAccount("GCKAVAXOGCUTPZQXSVZNAMA4GKVR5NOSAKXZFF2AX44NQ7UNRTC63GTB"), // Valid dummy account for simulation
-      { fee: BASE_FEE, networkPassphrase }
-    )
-    .addOperation(contract.call("get_lottery", xdr.ScVal.scvU32(lotteryId)))
-    .setTimeout(30)
-    .build()
-  );
+  try {
+    const simRes = await server.simulateTransaction(
+      new TransactionBuilder(
+        await server.getAccount("GCKAVAXOGCUTPZQXSVZNAMA4GKVR5NOSAKXZFF2AX44NQ7UNRTC63GTB"),
+        { fee: BASE_FEE, networkPassphrase }
+      )
+      .addOperation(contract.call("get_lottery", xdr.ScVal.scvU32(lotteryId)))
+      .setTimeout(30)
+      .build()
+    );
 
-  if (rpc.Api.isSimulationSuccess(simRes)) {
-    return scValToNative(simRes.result!.retval);
+    if (simRes && (simRes as any).result && (simRes as any).result.retval) {
+      return scValToNative((simRes as any).result.retval);
+    }
+    console.log("Simulation contained no valid result:", simRes);
+    return null;
+  } catch (err) {
+    console.log("Simulation threw an error cleanly:", err);
+    return null;
   }
-  return null;
 }
 
 /**

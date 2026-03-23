@@ -134,7 +134,7 @@ export default function Home() {
     try {
       const XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
       const ticketPrice = BigInt(100000000);
-      const duration = BigInt(3600); // 1 hour duration for testing
+      const duration = BigInt(60); // 60 seconds duration for immediate testing
       
       const tx = await createLotteryTx(walletAddress, XLM_SAC, ticketPrice, duration);
       
