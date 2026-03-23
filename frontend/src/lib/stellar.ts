@@ -13,7 +13,7 @@ import {
 export const rpcUrl = "https://soroban-testnet.stellar.org";
 export const networkPassphrase = Networks.TESTNET;
 export const server = new rpc.Server(rpcUrl);
-export const CONTRACT_ID = "CDRTITFVPL7SMUBWKXGEHP3XUIX2A6KZ3RUMS6AIFEPOS7QGIERPG2AS";
+export const CONTRACT_ID = "CCFOKMU4XLGFBAQAWN7AHMVU4JRDYHGHATZPWEV7KZ4S3NVQK73AR7GS";
 
 /**
  * Fetch lottery info from the contract.
@@ -42,6 +42,31 @@ export async function getLotteryInfo(lotteryId: number) {
   } catch (err) {
     console.log("Simulation threw an error cleanly:", err);
     return null;
+  }
+}
+
+/**
+ * Fetch the latest lottery ID from the contract.
+ */
+export async function getLotteryCount() {
+  try {
+    const simRes = await server.simulateTransaction(
+      new TransactionBuilder(
+        await server.getAccount("GCKAVAXOGCUTPZQXSVZNAMA4GKVR5NOSAKXZFF2AX44NQ7UNRTC63GTB"),
+        { fee: BASE_FEE, networkPassphrase }
+      )
+      .addOperation(new Contract(CONTRACT_ID).call("get_latest_id"))
+      .setTimeout(30)
+      .build()
+    );
+
+    if (simRes && (simRes as any).result && (simRes as any).result.retval) {
+      return scValToNative((simRes as any).result.retval);
+    }
+    return 0;
+  } catch (err) {
+    console.error("Failed to fetch lottery count:", err);
+    return 0;
   }
 }
 

@@ -2,19 +2,26 @@
 
 import React, { useState, useEffect } from 'react';
 import { isConnected, requestAccess, getAddress, signTransaction } from '@stellar/freighter-api';
-import { server, networkPassphrase, buyTicketTx, drawWinnerTx, createLotteryTx, getLotteryInfo, CONTRACT_ID } from '@/lib/stellar';
+import { server, networkPassphrase, buyTicketTx, drawWinnerTx, createLotteryTx, getLotteryInfo, getLotteryCount, CONTRACT_ID } from '@/lib/stellar';
 import { Transaction } from '@stellar/stellar-sdk';
 
 export default function Home() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [currentLotteryId, setCurrentLotteryId] = useState<number>(1);
   const [lotteryInfo, setLotteryInfo] = useState<any>(null);
 
   const fetchLotteryInfo = async () => {
     try {
-      const info = await getLotteryInfo(1);
-      setLotteryInfo(info);
+      const count = await getLotteryCount();
+      if (count > 0) {
+        setCurrentLotteryId(count);
+        const info = await getLotteryInfo(count);
+        setLotteryInfo(info);
+      } else {
+        setLotteryInfo(null);
+      }
     } catch (e) {
       console.error("Failed to fetch lottery info", e);
       setLotteryInfo(null);
@@ -60,7 +67,7 @@ export default function Home() {
     try {
       // For demo purposes, we use a fixed token address (SAC XLM on Testnet)
       const XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
-      const tx = await buyTicketTx(walletAddress, 1, XLM_SAC, BigInt(100000000));
+      const tx = await buyTicketTx(walletAddress, currentLotteryId, XLM_SAC, BigInt(100000000));
       
       setStatus("Waiting for Freighter signature...");
       const signResult = await signTransaction(tx.toXDR(), { networkPassphrase });
@@ -96,7 +103,7 @@ export default function Home() {
     setStatus("Preparing draw transaction...");
 
     try {
-      const tx = await drawWinnerTx(walletAddress, 1);
+      const tx = await drawWinnerTx(walletAddress, currentLotteryId);
       
       setStatus("Waiting for Freighter signature...");
       const signResult = await signTransaction(tx.toXDR(), { networkPassphrase });
@@ -147,8 +154,8 @@ export default function Home() {
       const result = await server.sendTransaction(txToSubmit);
       
       if (result.status !== "ERROR") {
-        alert("Success! New lottery created. You can now buy tickets for ID 1 (if this is the first).");
-        fetchLotteryInfo();
+        alert("Success! New lottery created. Discovering your pool ID...");
+        setTimeout(fetchLotteryInfo, 2000); // Give Soroban a moment to index
       } else {
         alert("Creation failed. Check console.");
         console.error(result);
@@ -238,6 +245,9 @@ export default function Home() {
                     NO POOL
                   </span>
                 )}
+                <span className="text-slate-300 text-sm font-medium bg-slate-800/50 px-4 py-1.5 rounded-full">
+                  Pool ID: <span className="text-violet-400 font-bold ml-1">#{currentLotteryId}</span>
+                </span>
                 <span className="text-slate-300 text-sm font-medium bg-slate-800/50 px-4 py-1.5 rounded-full">
                   Time left: <span className="text-white font-bold ml-1">{timeLeftStr}</span>
                 </span>

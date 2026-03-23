@@ -11,7 +11,7 @@ A fully decentralized, transparent, and permissionless lottery system built on t
 ## 🚀 Live DApp
 **🔗 [Explore the Lottery DApp](https://new-decentralized-lottery.vercel.app/)**
 
-**Contract Address:** [`CDRTITFVPL7SMUBWKXGEHP3XUIX2A6KZ3RUMS6AIFEPOS7QGIERPG2AS`](https://stellar.expert/explorer/testnet/contract/CDRTITFVPL7SMUBWKXGEHP3XUIX2A6KZ3RUMS6AIFEPOS7QGIERPG2AS)
+**Contract Address:** [`CCFOKMU4XLGFBAQAWN7AHMVU4JRDYHGHATZPWEV7KZ4S3NVQK73AR7GS`](https://stellar.expert/explorer/testnet/contract/CCFOKMU4XLGFBAQAWN7AHMVU4JRDYHGHATZPWEV7KZ4S3NVQK73AR7GS)
 
 ![Contract Interface](https://github.com/user-attachments/assets/54c533b3-74ce-428e-a609-5dbb1ec90040)
 

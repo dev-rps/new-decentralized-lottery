@@ -101,6 +101,11 @@ impl LotteryContract {
         env.storage().persistent().get(&DataKey::Lottery(lottery_id))
             .expect("Lottery not found")
     }
+
+    /// View function to get the latest lottery ID.
+    pub fn get_latest_id(env: Env) -> u32 {
+        env.storage().instance().get(&DataKey::Counter).unwrap_or(0)
+    }
 }
 
 #[cfg(test)]
