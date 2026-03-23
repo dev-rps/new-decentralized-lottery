@@ -1,6 +1,25 @@
 # Rust's output directory
-target
+target/
+Cargo.lock
 
-# Local settings
-.soroban
-.stellar
+# Soroban / Stellar local settings
+.soroban/
+.stellar/
+
+# Contract IDs and build artifacts
+contract_id.txt
+new_contract_id.txt
+check.json
+check.txt
+cacert.pem
+test_output.log
+
+# Frontend temporary files
+frontend/exports.txt
+frontend/.next/
+frontend/node_modules/
+frontend/build/
+frontend/out/
+frontend/.vercel
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
