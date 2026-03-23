@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { isConnected, requestAccess, getAddress, signTransaction } from '@stellar/freighter-api';
-import { server, networkPassphrase, buyTicketTx, drawWinnerTx, createLotteryTx, getLotteryInfo } from '@/lib/stellar';
+import { server, networkPassphrase, buyTicketTx, drawWinnerTx, createLotteryTx, getLotteryInfo, CONTRACT_ID } from '@/lib/stellar';
 import { Transaction } from '@stellar/stellar-sdk';
 
 export default function Home() {
@@ -59,7 +59,7 @@ export default function Home() {
 
     try {
       // For demo purposes, we use a fixed token address (SAC XLM on Testnet)
-      const XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75YJBMKBA2VZ7B6976666666666666666666";
+      const XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
       const tx = await buyTicketTx(walletAddress, 1, XLM_SAC, BigInt(100000000));
       
       setStatus("Waiting for Freighter signature...");
@@ -132,7 +132,7 @@ export default function Home() {
     setStatus("Creating new prize pool...");
 
     try {
-      const XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75YJBMKBA2VZ7B6976666666666666666666";
+      const XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
       const ticketPrice = BigInt(100000000);
       const duration = BigInt(3600); // 1 hour duration for testing
       
@@ -260,7 +260,7 @@ export default function Home() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400 text-sm">Contract</span>
-                  <span className="text-violet-400 font-mono text-sm tracking-tighter">CD6Y...WSJJ</span>
+                  <span className="text-violet-400 font-mono text-sm tracking-tighter">{CONTRACT_ID.substring(0, 4)}...{CONTRACT_ID.substring(CONTRACT_ID.length - 4)}</span>
                 </div>
               </div>
             </div>
