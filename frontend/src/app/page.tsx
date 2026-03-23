@@ -21,6 +21,7 @@ export default function Home() {
   const [isDeploying, setIsDeploying] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [currentLotteryId, setCurrentLotteryId] = useState<number>(0);
+  const [lotteryInfo, setLotteryInfo] = useState<any>(null);
   const [nowTs, setNowTs] = useState<number>(Math.floor(Date.now() / 1000));
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [lotteryHistory, setLotteryHistory] = useState<any[]>([]);
