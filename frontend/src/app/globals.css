@@ -18,20 +18,39 @@
     font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     margin: 0;
     padding: 0;
-    @apply antialiased selection:bg-brand-500/30 selection:text-brand-100;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: rgba(139, 92, 246, 0.3);
+    color: #ede9fe;
   }
 }
 
 @layer utilities {
   .glass-card {
-    @apply bg-zinc-900/40 backdrop-blur-xl border border-white/5 shadow-2xl;
+    background-color: rgba(24, 24, 27, 0.4);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   }
   
   .glass-card-hover {
-    @apply transition-all duration-300 hover:bg-zinc-800/40 hover:border-white/10 hover:shadow-brand-500/20;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .glass-card-hover:hover {
+    background-color: rgba(39, 39, 42, 0.4);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 40px -10px rgba(139, 92, 246, 0.2);
   }
 
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-300 via-brand-500 to-accent-400;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    background-image: linear-gradient(to right, #c4b5fd, #8b5cf6, #f472b6);
   }
 }

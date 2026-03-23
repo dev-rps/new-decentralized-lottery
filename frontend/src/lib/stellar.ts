@@ -130,3 +130,22 @@ export async function createLotteryTx(creatorAddress: string, tokenAddress: stri
 
   return await server.prepareTransaction(tx) as any;
 }
+
+/**
+ * Build a transaction to claim the prize of a drawn lottery.
+ */
+export async function claimPrizeTx(claimerAddress: string, lotteryId: number) {
+  const contract = new Contract(CONTRACT_ID);
+  
+  const tx = new TransactionBuilder(
+    await server.getAccount(claimerAddress),
+    { fee: BASE_FEE, networkPassphrase }
+  )
+  .addOperation(contract.call("claim_prize", 
+    xdr.ScVal.scvU32(lotteryId)
+  ))
+  .setTimeout(30)
+  .build();
+
+  return await server.prepareTransaction(tx) as any;
+}
