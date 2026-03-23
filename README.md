@@ -1,121 +1,134 @@
 # 🎰 Soroban Decentralized Lottery
 
-## 📌 Project Description
+[![Stellar](https://img.shields.io/badge/Stellar-Testnet-blue.svg)](https://stellar.org)
+[![Soroban](https://img.shields.io/badge/Soroban-Smart_Contract-orange.svg)](https://soroban.stellar.org)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org)
 
-The **Soroban Decentralized Lottery** is a transparent, secure, and fully on-chain lottery system built on the Stellar network. It enables verifiable and tamper-proof prize distribution where participants enter by purchasing tickets, and winners are selected using cryptographic randomness.
+A fully decentralized, transparent, and permissionless lottery system built on the **Stellar Network** using **Soroban Smart Contracts**. This DApp allows users to participate in a mathematically fair lottery with automated payouts and on-chain verifiable randomness.
 
-This project is designed to eliminate the need for centralized lotteries by ensuring that funds are managed strictly by contract code, and the "Pick Winner" process is publicly verifiable.
+---
 
-## ⚡ What it does
+## 🚀 Live DApp
+**🔗 [Explore the Lottery DApp](https://new-decentralized-lottery.vercel.app/)**
 
-* **Ticket Purchase:** Allows users to enter the participant pool by paying a set ticket price in a single transaction.
-* **On-Chain Randomness:** Utilizes Soroban's native `prng` (Pseudo-Random Number Generator) for mathematically fair winner selection.
-* **Automated Payouts:** Automatically transfers the entire prize pool to the winner without requiring a middleman.
-* **State Management:** Securely manages active/inactive states to prevent entries after a round has concluded.
+**Contract Address:** [`CDRTITFVPL7SMUBWKXGEHP3XUIX2A6KZ3RUMS6AIFEPOS7QGIERPG2AS`](https://stellar.expert/explorer/testnet/contract/CDRTITFVPL7SMUBWKXGEHP3XUIX2A6KZ3RUMS6AIFEPOS7QGIERPG2AS)
+
+![DApp Interface](https://github.com/user-attachments/assets/8d003d71-6507-4b22-9c60-d657b11875e2)
+
+---
 
 ## ✨ Features
 
-* **🌍 Decentralized:** No central server; all participant data and funds live securely on the Stellar ledger.
-* **🔐 Secure Auth:** Uses Soroban's `require_auth()` to ensure participants are spending their own funds to enter.
-* **🔍 Complete Transparency:** Anyone can query the `get_players` function to see the current participant pool.
-* **⚡ Gas Efficient:** Optimized Rust code for minimal resource and fee consumption.
-* **🛡️ Admin Controls:** Authorized admins can initialize the contract, set ticket prices, and trigger the final draw.
+- **🌍 Fully On-Chain:** All lottery states, participant lists, and prize pools are managed strictly by code on the Stellar ledger.
+- **🔐 Permissionless:** Anyone call create a new pool or buy a ticket without central approval.
+- **🎲 Verifiable Randomness:** Uses Soroban's native `prng` (Pseudo-Random Number Generator) for fair winner selection.
+- **🛡️ State Integrity:** Implements persistent storage mappings to ensure participant data is never lost across transactions.
+- **⚡ Automated Payouts:** Winners receive the full prize pool immediately upon the draw, handled by the smart contract.
+- **💸 Dynamic Ticket Pricing:** Supports any SAC (Smart Asset Contract) compliant tokens (e.g., Native XLM).
+
+---
 
 ## 🛠️ Tech Stack
 
-* **Language:** Rust
-* **Framework:** Soroban SDK
-* **Blockchain:** Stellar Network
+- **Smart Contract:** Rust & Soroban SDK
+- **Frontend:** Next.js 15, React 19, Tailwind CSS
+- **Blockchain Interaction:** `@stellar/stellar-sdk` & `@stellar/freighter-api`
+- **Network:** Stellar Testnet
 
+---
 
+## 🧠 Architectural Overview
 
-## 🧠 How it Works
+### 1. Smart Contract Storage
+The contract uses **Persistent Storage** to manage the state of each lottery round. This ensures that:
+- Participant lists scale correctly without hitting instance size limits too early.
+- Storage is maintained across different ledger entries for high reliability.
 
-1. **Initialization:** The Admin initializes the contract with a specific Token (e.g., test USDC/XLM) and a Ticket Price.
-2. **Participation:** Users invoke `buy_ticket`. The contract charges them the ticket price and adds their address to the ledger.
-3. **The Draw:** The Admin invokes `pick_winner`. The contract generates a random number, selects a winner, transfers the pooled tokens to them, and resets the lottery for the next round!
+### 2. Randomness Mechanism
+The `draw_winner` function utilizes the provided `env.prng().u64_in_range(0, count)` to select an index from the participant array. This bypasses the predictability of block-based randomness found in less advanced networks.
 
-## 📄 Contract Functions
+### 3. Frontend Polling
+The Next.js frontend utilizes background indexing and simulation-based polling to provide a real-time "ACTIVE/ENDED" status and countdown timer without requiring an external centralized backend.
 
-🔹 `initialize`
-* **Purpose:** Sets up the lottery round.
-* **Parameters:** `admin` (Address), `token_addr` (Address), `ticket_price` (i128)
+---
 
-🔹 `buy_ticket`
-* **Purpose:** Enters a user into the lottery.
-* **Parameters:** `buyer` (Address)
+## 📄 Smart Contract API
 
-🔹 `pick_winner`
-* **Purpose:** Selects a random winner and pays out the pool.
-* **Returns:** Winner's Address
+### `create_lottery(creator, token, ticket_price, duration)`
+Initializes a new prize pool.
+- `creator`: The address authorized to manage the draw (though anyone can call it after expiry).
+- `token`: The SAC token used for the prize pool (e.g., XLM).
+- `ticket_price`: Cost per entry in Stroops (10^7 scale).
+- `duration`: Time in seconds until the draw is unlocked.
 
-🔹 `get_players`
-* **Purpose:** Views the current participant pool.
-* **Returns:** Vector of Addresses
+### `buy_ticket(lottery_id, buyer)`
+Enters a user into the specified pool.
+- Requires caller authentication.
+- Checks if the lottery is active and the buyer has sufficient balance.
 
-## ⚙️ Installation & Build
+### `draw_winner(lottery_id)`
+Calculates the winner and disburses the pool.
+- Can only be called after the `end_time` has passed.
+- Automatically resets the lottery state.
 
+### `get_lottery(lottery_id)`
+View function to return current pool metadata, participants, and time-remaining.
+
+---
+
+## ⚙️ Development & Setup
+
+### 1. Smart Contract (Rust)
 ```bash
-# Clone the repository
-git clone https://github.com/dev-rps/decentralized-lottery.git
+# Navigate to the contract directory
+cd contracts/lottery
 
-# Navigate into the project
-cd decentralized-lottery/contracts/hello-world
-
-# Build the contract
+# Build the WASM binary
 stellar contract build
+
+# Run automated integration tests
+cargo test
 ```
 
-## 🚀 Deployment
-
-Deploy the contract on the Stellar Testnet:
+### 2. Frontend (Next.js)
 ```bash
-stellar contract deploy \
-  --wasm target/wasm32v1-none/release/hello_world.wasm \
-  --source YOUR_ACCOUNT \
-  --network testnet
+# Navigate to the frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Run localized development server
+npm run dev
 ```
 
-## 🌐 Deployed Smart Contract
+---
 
-* **Contract Address:** `CDRTITFVPL7SMUBWKXGEHP3XUIX2A6KZ3RUMS6AIFEPOS7QGIERPG2AS`
-* **Network:** Stellar Testnet
-* **Link Address:** https://stellar.expert/explorer/testnet/contract/CDRTITFVPL7SMUBWKXGEHP3XUIX2A6KZ3RUMS6AIFEPOS7QGIERPG2AS
+## 🚀 Deployment Guide
 
+To deploy your own instance of the lottery:
 
-## 🧪 Future Improvements
+1. **Deploy WASM:**
+   ```bash
+   stellar contract deploy \
+     --wasm target/wasm32v1-none/release/lottery.wasm \
+     --source YOUR_ACCOUNT_ALIAS \
+     --network testnet
+   ```
+2. **Update Frontend:**
+   Copy the generated `Contract ID` and update it in `frontend/src/lib/stellar.ts`.
 
-* 📦 **Multiple Winners:** Support for 1st, 2nd, and 3rd place prize splits.
-* ⏳ **Time-Locked Draws:** Automatically trigger draws via a cron job instead of an admin trigger.
-* 🎯 **Dynamic Ticket Pricing:** Allowing users to buy multiple entries in a single transaction.
-* 🌐 **Frontend Dashboard:** A React/Next.js UI for users to seamlessly buy tickets with their Freighter wallet.
+---
 
 ## 🤝 Contributing
-
-Contributions are welcome! Feel free to fork the repository and submit a pull request if you want to add new features or optimize the logic.
+Contributions are welcome! Please fork the repo and submit a PR for any features like "Multiple Payouts" or "Governance Voting".
 
 ## 👤 Author
+- **Rudra Pratap Singh**
+- [rpscodes@gmail.com](mailto:rpscodes@gmail.com)
+- GitHub: [@dev-rps](https://github.com/dev-rps)
 
-* **Name:** Rudra Pratap Singh
-* **Email:** rpscodes@gmail.com
-* **GitHub:** [dev-rps](https://github.com/dev-rps)
+---
 
 ## 📜 License
-
-This project is licensed under the MIT License.
-
-## ⭐ Acknowledgment
-
-Built using the powerful **Soroban SDK** on the Stellar network to enable scalable, transparent, and efficient smart contract development.
-
-## dApp Full Stack Deployment
-**contract address:** CDRTITFVPL7SMUBWKXGEHP3XUIX2A6KZ3RUMS6AIFEPOS7QGIERPG2AS
-<img width="1920" height="1080" alt="contract-id" src="https://github.com/user-attachments/assets/1e63b610-e023-49a6-9689-f7174a0896bc" />
-
-**dApp Link:** https://new-decentralized-lottery.vercel.app/
-<img width="1920" height="1080" alt="frontend-lottery" src="https://github.com/user-attachments/assets/8d003d71-6507-4b22-9c60-d657b11875e2" />
-
-
-
-
-
+Licensed under the **MIT License**.
