@@ -523,7 +523,7 @@ export default function Home() {
                         const tp = Number(item.ticket_price || 0) / 10000000;
                         const pool = tp * (item.participants?.length || 0);
                         const winAddr = item.winner ? String(item.winner) : "TBD";
-                        const shortAddr = winAddr !== "TBD" ? `...${winAddr.slice(-3)}` : "TBD";
+                        const shortAddr = winAddr !== "TBD" ? `...${winAddr.slice(-4)}` : "TBD";
                         const isPastActive = item.active;
                         const isPastEnd = Number(item.end_time) <= nowTs;
                         

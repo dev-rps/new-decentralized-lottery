@@ -4,7 +4,7 @@
 [![Soroban](https://img.shields.io/badge/Soroban-Smart_Contract-orange.svg)](https://soroban.stellar.org)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org)
 
-A fully decentralized, transparent, and permissionless lottery system built on the **Stellar Network** using **Soroban Smart Contracts**. This DApp allows users to participate in a mathematically fair lottery with automated payouts and on-chain verifiable randomness.
+A fully decentralized, transparent, and permissionless lottery system built on the **Stellar Network** using **Soroban Smart Contracts**. Participate in mathematically fair prize pools with on-chain verifiable randomness and a **Pull-over-Push** prize distribution model.
 
 ---
 
@@ -22,10 +22,11 @@ A fully decentralized, transparent, and permissionless lottery system built on t
 ## ✨ Features
 
 - **🌍 Fully On-Chain:** All lottery states, participant lists, and prize pools are managed strictly by code on the Stellar ledger.
-- **🔐 Permissionless:** Anyone call create a new pool or buy a ticket without central approval.
+- **🔐 Permissionless:** Anyone can create a new pool or buy a ticket without central approval.
 - **🎲 Verifiable Randomness:** Uses Soroban's native `prng` (Pseudo-Random Number Generator) for fair winner selection.
-- **🛡️ State Integrity:** Implements persistent storage mappings to ensure participant data is never lost across transactions.
-- **⚡ Automated Payouts:** Winners receive the full prize pool immediately upon the draw, handled by the smart contract.
+- **🛡️ Pull-over-Push Security:** Winner selection and prize distribution are split into separate transactions (`draw_winner` + `claim_prize`) to avoid Soroban footprint errors.
+- **📜 Draw History:** Full on-chain history of past lotteries with winner addresses and claim status.
+- **⏱️ Live Countdown:** Real-time countdown timer with automatic state transitions.
 - **💸 Dynamic Ticket Pricing:** Supports any SAC (Smart Asset Contract) compliant tokens (e.g., Native XLM).
 
 ---
@@ -33,7 +34,7 @@ A fully decentralized, transparent, and permissionless lottery system built on t
 ## 🛠️ Tech Stack
 
 - **Smart Contract:** Rust & Soroban SDK
-- **Frontend:** Next.js 15, React 19, Tailwind CSS
+- **Frontend:** Next.js 16, React 19, Tailwind CSS v4, Framer Motion
 - **Blockchain Interaction:** `@stellar/stellar-sdk` & `@stellar/freighter-api`
 - **Network:** Stellar Testnet
 
@@ -69,12 +70,21 @@ Enters a user into the specified pool.
 - Checks if the lottery is active and the buyer has sufficient balance.
 
 ### `draw_winner(lottery_id)`
-Calculates the winner and disburses the pool.
+Selects the winner using on-chain PRNG.
 - Can only be called after the `end_time` has passed.
-- Automatically resets the lottery state.
+- Stores the winner address in contract state but **does not transfer tokens** (Pull-over-Push pattern).
+
+### `claim_prize(lottery_id)`
+Transfers the prize pool to the selected winner.
+- Can only be called after `draw_winner` has been executed.
+- Prevents double-claims via `prize_claimed` flag.
+- Anyone can trigger this — the funds always go to the winner's address.
 
 ### `get_lottery(lottery_id)`
-View function to return current pool metadata, participants, and time-remaining.
+View function to return current pool metadata, participants, winner, and claim status.
+
+### `get_latest_id()`
+Returns the most recent lottery ID for frontend discovery.
 
 ---
 
