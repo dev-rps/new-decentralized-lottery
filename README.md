@@ -4,7 +4,32 @@
 [![Soroban](https://img.shields.io/badge/Soroban-Smart_Contract-orange.svg)](https://soroban.stellar.org)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org)
 
-A fully decentralized, transparent, and permissionless lottery system built on the **Stellar Network** using **Soroban Smart Contracts**. Participate in mathematically fair prize pools with on-chain verifiable randomness and a **Pull-over-Push** prize distribution model.
+## 📖 Project Description
+**Nexus Lottery** is a fully decentralized, transparent, and permissionless prize pool system built on the **Stellar Network** using **Soroban Smart Contracts**. 
+
+Traditional lotteries often suffer from opaque draw mechanisms and centralized control. Nexus solves this by anchoring the entire lifecycle on-chain:
+- **Verifiable Randomness**: Selects winners using Soroban's native `prng` (Pseudo-Random Number Generator), ensuring mathematical fairness that cannot be tampered with by administrators.
+- **Permissionless Pool Creation**: Any user can launch a new prize pool for any SAC-compliant token (XLM, USDC, etc.), democratizing the lottery experience.
+- **Security-First Architecture**: Implements a **Pull-over-Push** prize distribution model, separating the draw from the payout to maintain ledger integrity and avoid gas limit errors.
+
+---
+
+## 📸 Visual Proof 
+
+### 1. Wallet Connected State
+![Wallet Connected](https://github.com/user-attachments/assets/8518d62d-4385-4bdf-bd1c-c04e814fddf6)
+
+
+### 2. Balance Displayed
+![Balance Displayed](https://github.com/user-attachments/assets/333e177a-e10f-4eff-aa0e-6327d5246c03)
+
+
+### 3. Successful Testnet Transaction
+![Successful Transaction](https://github.com/user-attachments/assets/45ef0c92-adb6-4537-8dab-000fb4712f49)
+
+
+### 4. Transaction Result Shown to User
+![Transaction Result](https://github.com/user-attachments/assets/dfc2c4d6-3599-48c6-8a70-a89be3d5775b)
 
 ---
 
@@ -88,9 +113,14 @@ Returns the most recent lottery ID for frontend discovery.
 
 ---
 
-## ⚙️ Development & Setup
+## ⚙️ Setup & Installation
 
-### 1. Smart Contract (Rust)
+### Prerequisites
+- [Stellar CLI](https://developers.stellar.org/docs/build/smart-contracts/getting-started/setup#install-the-stellar-cli) installed.
+- [Node.js v20+](https://nodejs.org/) and `npm` installed.
+- [Freighter Wallet](https://www.freighter.app/) extension (Testnet enabled).
+
+### 1. Smart Contract (Soroban/Rust)
 ```bash
 # Navigate to the contract directory
 cd contracts/lottery
@@ -98,21 +128,23 @@ cd contracts/lottery
 # Build the WASM binary
 stellar contract build
 
-# Run automated integration tests
+# Run unit tests to verify logic
 cargo test
 ```
 
 ### 2. Frontend (Next.js)
 ```bash
-# Navigate to the frontend directory
+# Navigate to the frontend directory from root
 cd frontend
 
 # Install dependencies
 npm install
 
+# Create a .env.local (optional) or update CONTRACT_ID in src/lib/stellar.ts
 # Run localized development server
 npm run dev
 ```
+Open `http://localhost:3000` to interact with the local DApp.
 
 ---
 
