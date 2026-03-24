@@ -32,7 +32,10 @@ Traditional lotteries often suffer from opaque draw mechanisms and centralized c
 ![Transaction Result](https://github.com/user-attachments/assets/dfc2c4d6-3599-48c6-8a70-a89be3d5775b)
 
 ### 5. Demo Video
-https://github.com/user-attachments/assets/27206e5f-8100-4e1d-86cc-758d62946008
+https://github.com/user-attachments/assets/a292960e-9d9a-4528-886d-81e7bfc3159f
+
+### 6. Draw History (Test Results)
+![Draw History](https://github.com/user-attachments/assets/0c8c03c1-c103-448c-8acb-8c675f2b6e3a)
 
 
 ---
